@@ -1,0 +1,413 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */; };
+		77A0520BC3144958AEF51F2E /* PhotographicViewSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */; };
+		926207BD7B78459FAAF4BAA0 /* ARFoodCaptureApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */; };
+		19E6B361384E4E57BD8C2ECB /* CaptureInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */; };
+		096B0C15206F43119032AC7B /* GuidedCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */; };
+		63B3CA78180E4C3CAF7BFFEE /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */; };
+		8BD98750E225447EAED6615D /* CaptureDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */; };
+		AEB2515370B34D9AB8F55885 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F917D7DC5ED436E81D265D8 /* HomeView.swift */; };
+		868A95DE1FD44E4793614056 /* MyObjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */; };
+		9CAAFB6063E8489AAC1E514A /* FoodObjectModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */; };
+		6402254CB0014EA48A1B24C0 /* BackgroundRemovalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */; };
+		BEC915B427364626B44E60EC /* CameraCaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */; };
+		CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */; };
+		0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */; };
+		5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */; };
+		1DF6F65375EC48A59DCB49E1 /* ObjectExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */; };
+		7C370B0F94C046B8A5BE3A6F /* ObjectLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */; };
+		E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB0CA9426CE4296AAC22571 /* AppTheme.swift */; };
+		757B0199B3CF467DAE2CDA4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02B4203942C143E8BC1A950C /* Assets.xcassets */; };
+		EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */ = {isa = PBXBuildFile; fileRef = 85F27F1B5EF043A89C731BF3 /* DemoBurger */; };
+		29FB1872168740A1AB384B45 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C33EC4F28D4AC9942FF755 /* ARKit.framework */; };
+		BB15A17867E347FABF361BD0 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */; };
+		A100016027C44F0BBF873F33 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 608D83C98EB54995A2416042 /* AVFoundation.framework */; };
+		26FDC2745EA04C088A202BE4 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11B1394066E1484B9FEA6A32 /* Vision.framework */; };
+		AE5562A505A340B6B5A30E35 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 336C66311C9A4A55927C1559 /* CoreMotion.framework */; };
+		159A952D36164E7D9AFDE0D3 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACFC7B78C784753AB7B4931 /* Photos.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		774916E821A84FF8B07EA151 /* ARFoodCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ARFoodCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicARView.swift; sourceTree = "<group>"; };
+		BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicViewSelector.swift; sourceTree = "<group>"; };
+		39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARFoodCaptureApp.swift; sourceTree = "<group>"; };
+		7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInstructionsView.swift; sourceTree = "<group>"; };
+		63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureView.swift; sourceTree = "<group>"; };
+		E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
+		E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureDebugView.swift; sourceTree = "<group>"; };
+		7F917D7DC5ED436E81D265D8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyObjectsView.swift; sourceTree = "<group>"; };
+		34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodObjectModels.swift; sourceTree = "<group>"; };
+		F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRemovalService.swift; sourceTree = "<group>"; };
+		47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureController.swift; sourceTree = "<group>"; };
+		3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureSession.swift; sourceTree = "<group>"; };
+		F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingPipeline.swift; sourceTree = "<group>"; };
+		82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionCaptureGuide.swift; sourceTree = "<group>"; };
+		C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectExporter.swift; sourceTree = "<group>"; };
+		4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectLibraryStore.swift; sourceTree = "<group>"; };
+		5BB0CA9426CE4296AAC22571 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		02B4203942C143E8BC1A950C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		85F27F1B5EF043A89C731BF3 /* DemoBurger */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DemoBurger; path = Resources/DemoBurger; sourceTree = "<group>"; };
+		10E11BD84CE743C690D0B716 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		52C33EC4F28D4AC9942FF755 /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ARKit.framework; path = System/Library/Frameworks/ARKit.framework; sourceTree = SDKROOT; };
+		C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
+		608D83C98EB54995A2416042 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		11B1394066E1484B9FEA6A32 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
+		336C66311C9A4A55927C1559 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
+		AACFC7B78C784753AB7B4931 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		995E41C0174440DF9EBEC388 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				29FB1872168740A1AB384B45 /* ARKit.framework in Frameworks */,
+				BB15A17867E347FABF361BD0 /* RealityKit.framework in Frameworks */,
+				A100016027C44F0BBF873F33 /* AVFoundation.framework in Frameworks */,
+				26FDC2745EA04C088A202BE4 /* Vision.framework in Frameworks */,
+				AE5562A505A340B6B5A30E35 /* CoreMotion.framework in Frameworks */,
+				159A952D36164E7D9AFDE0D3 /* Photos.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7E4AB3229844449687B4EFB7 = {
+			isa = PBXGroup;
+			children = (
+				D552E89345844D6EB18AAD81 /* ARFoodCapture */,
+				09E1655A04B94B42A0DE5D6F /* Frameworks */,
+				ECC4173AC533452583C71FB3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		ECC4173AC533452583C71FB3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				774916E821A84FF8B07EA151 /* ARFoodCapture.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		09E1655A04B94B42A0DE5D6F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				52C33EC4F28D4AC9942FF755 /* ARKit.framework */,
+				C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */,
+				608D83C98EB54995A2416042 /* AVFoundation.framework */,
+				11B1394066E1484B9FEA6A32 /* Vision.framework */,
+				336C66311C9A4A55927C1559 /* CoreMotion.framework */,
+				AACFC7B78C784753AB7B4931 /* Photos.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D552E89345844D6EB18AAD81 /* ARFoodCapture */ = {
+			isa = PBXGroup;
+			children = (
+				8DC79C5EC0A442EEAD1B4D7F /* AR */,
+				558F484DC4374180B5357414 /* Capture */,
+				5296C31742294B03803D7BB5 /* Debug */,
+				081F8E769EB145B3B24BCF31 /* Library */,
+				81BA7E11A326445E8D213ADE /* Models */,
+				A06C6045217F4070A36C9BF9 /* Services */,
+				8AFCD7254AA34B129759A7F6 /* Theme */,
+				39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */,
+				02B4203942C143E8BC1A950C /* Assets.xcassets */,
+				85F27F1B5EF043A89C731BF3 /* DemoBurger */,
+				10E11BD84CE743C690D0B716 /* Info.plist */,
+			);
+			path = ARFoodCapture;
+			sourceTree = "<group>";
+		};
+		8DC79C5EC0A442EEAD1B4D7F /* AR */ = {
+			isa = PBXGroup;
+			children = (
+				6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */,
+				BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */,
+			);
+			path = AR;
+			sourceTree = "<group>";
+		};
+		558F484DC4374180B5357414 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */,
+				63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */,
+				E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		5296C31742294B03803D7BB5 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
+		081F8E769EB145B3B24BCF31 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				7F917D7DC5ED436E81D265D8 /* HomeView.swift */,
+				5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		81BA7E11A326445E8D213ADE /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A06C6045217F4070A36C9BF9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */,
+				47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */,
+				3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */,
+				F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */,
+				82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */,
+				C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */,
+				4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		8AFCD7254AA34B129759A7F6 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				5BB0CA9426CE4296AAC22571 /* AppTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C97358F1E1914269B60998FE /* ARFoodCapture */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E683DA01BF745DCA4D4AC87 /* Build configuration list for PBXNativeTarget "ARFoodCapture" */;
+			buildPhases = (
+				1AC3ED3EEC174AA0BADCAC84 /* Sources */,
+				995E41C0174440DF9EBEC388 /* Frameworks */,
+				F24E6F22BE07487185E280CB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ARFoodCapture;
+			productName = ARFoodCapture;
+			productReference = 774916E821A84FF8B07EA151 /* ARFoodCapture.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BB4717B8D94D4CA3AF08D7DF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					C97358F1E1914269B60998FE = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 40AAA5A8BD1C4E9CA102E8C8 /* Build configuration list for PBXProject "ARFoodCapture" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 7E4AB3229844449687B4EFB7;
+			productRefGroup = ECC4173AC533452583C71FB3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C97358F1E1914269B60998FE /* ARFoodCapture */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F24E6F22BE07487185E280CB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757B0199B3CF467DAE2CDA4A /* Assets.xcassets in Resources */,
+				EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1AC3ED3EEC174AA0BADCAC84 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */,
+				77A0520BC3144958AEF51F2E /* PhotographicViewSelector.swift in Sources */,
+				926207BD7B78459FAAF4BAA0 /* ARFoodCaptureApp.swift in Sources */,
+				19E6B361384E4E57BD8C2ECB /* CaptureInstructionsView.swift in Sources */,
+				096B0C15206F43119032AC7B /* GuidedCaptureView.swift in Sources */,
+				63B3CA78180E4C3CAF7BFFEE /* ProcessingView.swift in Sources */,
+				8BD98750E225447EAED6615D /* CaptureDebugView.swift in Sources */,
+				AEB2515370B34D9AB8F55885 /* HomeView.swift in Sources */,
+				868A95DE1FD44E4793614056 /* MyObjectsView.swift in Sources */,
+				9CAAFB6063E8489AAC1E514A /* FoodObjectModels.swift in Sources */,
+				6402254CB0014EA48A1B24C0 /* BackgroundRemovalService.swift in Sources */,
+				BEC915B427364626B44E60EC /* CameraCaptureController.swift in Sources */,
+				CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */,
+				0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */,
+				5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */,
+				1DF6F65375EC48A59DCB49E1 /* ObjectExporter.swift in Sources */,
+				7C370B0F94C046B8A5BE3A6F /* ObjectLibraryStore.swift in Sources */,
+				E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		140C6EC606144A8790704A76 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		0EA69F595757483296754277 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+		E6800B76B74A4C81BDA61D2F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ARFoodCapture/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AR Food";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arfood.capture;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F9455E96AE2B4FB798200097 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ARFoodCapture/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AR Food";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arfood.capture;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		40AAA5A8BD1C4E9CA102E8C8 /* Build configuration list for PBXProject "ARFoodCapture" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				140C6EC606144A8790704A76 /* Debug */,
+				0EA69F595757483296754277 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E683DA01BF745DCA4D4AC87 /* Build configuration list for PBXNativeTarget "ARFoodCapture" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6800B76B74A4C81BDA61D2F /* Debug */,
+				F9455E96AE2B4FB798200097 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BB4717B8D94D4CA3AF08D7DF /* Project object */;
+}

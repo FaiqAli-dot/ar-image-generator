@@ -1,0 +1,15 @@
+.DS_Store
+**/xcuserdata/
+**/*.xcuserstate
+DerivedData/
+.build/
+.venv/
+optional-backend/.venv/
+__pycache__/
+*.pyc
+.idea/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
