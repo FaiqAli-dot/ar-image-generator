@@ -43,6 +43,9 @@ struct PhotographicARScreen: View {
                         .font(.caption.weight(.semibold))
                         .tracking(1)
                         .foregroundStyle(.white.opacity(0.9))
+                        .onLongPressGesture {
+                            showDebugOverlay.toggle()
+                        }
                     Spacer()
                     Color.clear.frame(width: 40, height: 40)
                 }

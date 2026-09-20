@@ -3,6 +3,7 @@ import UIKit
 import RealityKit
 import ARKit
 import Combine
+import QuartzCore
 
 /// Selects photographic views from viewer azimuth/elevation — NOT a 3D mesh.
 @MainActor
