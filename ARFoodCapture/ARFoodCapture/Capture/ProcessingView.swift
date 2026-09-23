@@ -105,6 +105,11 @@ struct ObjectReadyView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
+                Button("UPLOAD OBJECT") {
+                    path.append(Route.upload(id: objectID))
+                }
+                .buttonStyle(PrimaryButtonStyle(filled: false))
+
                 Button("DONE") {
                     path = NavigationPath()
                 }

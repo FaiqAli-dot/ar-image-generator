@@ -26,8 +26,12 @@ final class PhotographicViewSelector: ObservableObject {
     }
 
     func preload(store: ObjectLibraryStore) {
+        preload(provider: LocalPhotographicImageProvider(object: object, store: store))
+    }
+
+    func preload(provider: PhotographicImageProviding) {
         for view in object.views {
-            if let ui = store.loadImage(for: object, view: view), let cg = ui.cgImage {
+            if let ui = provider.loadUIImage(named: view.image), let cg = ui.cgImage {
                 images[view.image] = cg
                 if let tex = try? TextureResource.generate(from: cg, options: TextureResource.CreateOptions(semantic: .color)) {
                     textures[view.image] = tex

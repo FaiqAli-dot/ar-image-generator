@@ -6,6 +6,7 @@ struct CaptureDebugView: View {
     @StateObject private var motion = MotionCaptureGuide()
     @State private var selectedObjectID: String?
     @State private var selector: PhotographicViewSelector?
+    @State private var apiOverride: String = APIConfig.overrideString ?? ""
 
     var body: some View {
         NavigationStack {
@@ -13,11 +14,40 @@ struct CaptureDebugView: View {
                 Section("Library") {
                     Text("Objects: \(store.objects.count)")
                     ForEach(store.objects) { obj in
-                        Button("\(obj.name) — \(obj.viewCount) views") {
+                        Button("\(obj.name) — \(obj.viewCount) views · \(obj.syncState.badgeTitle)") {
                             selectedObjectID = obj.id
                             let sel = PhotographicViewSelector(object: obj)
                             sel.preload(store: store)
                             selector = sel
+                        }
+                    }
+                }
+
+                Section("API base URL") {
+                    Text("Resolved: \(APIConfig.baseURL?.absoluteString ?? "(none)")")
+                        .font(.footnote.monospaced())
+                    TextField("Override (e.g. https://…)", text: $apiOverride)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    Button("Save override") {
+                        APIConfig.setOverride(apiOverride)
+                    }
+                    Button("Clear override") {
+                        apiOverride = ""
+                        APIConfig.setOverride(nil)
+                    }
+                    if let capture = Optional(APIConfig.captureQRURL),
+                       let qr = QRCodeGenerator.image(from: capture.absoluteString, dimension: 180) {
+                        VStack {
+                            Text("Capture QR → CAPTURE NEW FOOD")
+                                .font(.caption)
+                            Image(uiImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .frame(width: 120, height: 120)
+                            Text(capture.absoluteString)
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }

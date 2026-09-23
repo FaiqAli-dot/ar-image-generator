@@ -72,17 +72,17 @@ final class ObjectLibraryStore: ObservableObject {
 
         var mutable = object
         mutable.viewCount = object.views.count
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let metaData = try encoder.encode(mutable)
-        try metaData.write(to: dir.appendingPathComponent("object.json"), options: .atomic)
+        try writeMetadata(mutable)
+        upsert(mutable)
+        try persistIndex()
+    }
 
-        if let idx = objects.firstIndex(where: { $0.id == mutable.id }) {
-            objects[idx] = mutable
-        } else {
-            objects.insert(mutable, at: 0)
-        }
+    /// Updates object.json + in-memory index without rewriting images (upload state, rename, etc.).
+    func updateMetadata(_ object: FoodObject) throws {
+        var mutable = object
+        mutable.viewCount = object.views.count
+        try writeMetadata(mutable)
+        upsert(mutable)
         try persistIndex()
     }
 
@@ -100,6 +100,10 @@ final class ObjectLibraryStore: ObservableObject {
         objects.first { $0.id == id }
     }
 
+    func object(remoteId: String) -> FoodObject? {
+        objects.first { $0.remoteId == remoteId }
+    }
+
     func reloadObject(id: String) -> FoodObject? {
         let url = directory(for: id).appendingPathComponent("object.json")
         guard let data = try? Data(contentsOf: url) else { return nil }
@@ -109,6 +113,24 @@ final class ObjectLibraryStore: ObservableObject {
     }
 
     // MARK: - Private
+
+    private func writeMetadata(_ object: FoodObject) throws {
+        let dir = directory(for: object.id)
+        try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let metaData = try encoder.encode(object)
+        try metaData.write(to: dir.appendingPathComponent("object.json"), options: .atomic)
+    }
+
+    private func upsert(_ object: FoodObject) {
+        if let idx = objects.firstIndex(where: { $0.id == object.id }) {
+            objects[idx] = object
+        } else {
+            objects.insert(object, at: 0)
+        }
+    }
 
     private func load() {
         guard let data = try? Data(contentsOf: indexURL) else {
@@ -134,6 +156,9 @@ final class ObjectLibraryStore: ObservableObject {
         let demoID = "demo-burger"
         let dest = directory(for: demoID)
 
+        // Preserve Phase 2 remote metadata if demo was already uploaded.
+        let previous = reloadObject(id: demoID)
+
         let candidates: [URL?] = [
             Bundle.main.url(forResource: "DemoBurger", withExtension: nil),
             Bundle.main.resourceURL?.appendingPathComponent("DemoBurger"),
@@ -149,7 +174,16 @@ final class ObjectLibraryStore: ObservableObject {
             try? fileManager.copyItem(at: bundleURL, to: dest)
         }
 
-        if let demo = reloadObject(id: demoID) {
+        if var demo = reloadObject(id: demoID) {
+            if let previous {
+                demo.syncState = previous.syncState
+                demo.remoteId = previous.remoteId
+                demo.arUrl = previous.arUrl
+                demo.deepLink = previous.deepLink
+                demo.lastUploadError = previous.lastUploadError
+                demo.objectDescription = previous.objectDescription
+                try? writeMetadata(demo)
+            }
             if !objects.contains(where: { $0.id == demoID }) {
                 objects.insert(demo, at: 0)
                 try? persistIndex()

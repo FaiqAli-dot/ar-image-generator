@@ -14,6 +14,14 @@ struct FoodObject: Codable, Identifiable, Hashable {
     var notes: String?
     var views: [CapturedView]
 
+    // Phase 2 remote pipeline (optional; defaults preserve MVP local objects)
+    var syncState: ObjectSyncState
+    var remoteId: String?
+    var arUrl: String?
+    var deepLink: String?
+    var lastUploadError: String?
+    var objectDescription: String?
+
     /// Relative folder name under Application Support / bundle DemoBurger
     var storageDirectoryName: String { id }
 
@@ -26,7 +34,13 @@ struct FoodObject: Codable, Identifiable, Hashable {
         widthCm: Double,
         views: [CapturedView],
         isDemo: Bool = false,
-        notes: String? = nil
+        notes: String? = nil,
+        syncState: ObjectSyncState = .local,
+        remoteId: String? = nil,
+        arUrl: String? = nil,
+        deepLink: String? = nil,
+        lastUploadError: String? = nil,
+        objectDescription: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -38,6 +52,63 @@ struct FoodObject: Codable, Identifiable, Hashable {
         self.kind = Self.photographicKind
         self.notes = notes
         self.views = views
+        self.syncState = syncState
+        self.remoteId = remoteId
+        self.arUrl = arUrl
+        self.deepLink = deepLink
+        self.lastUploadError = lastUploadError
+        self.objectDescription = objectDescription
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, createdAt, widthCm, viewCount, isDemo, schemaVersion, kind, notes, views
+        case syncState, remoteId, arUrl, deepLink, lastUploadError, objectDescription
+        case description
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        widthCm = try c.decode(Double.self, forKey: .widthCm)
+        views = try c.decode([CapturedView].self, forKey: .views)
+        viewCount = try c.decodeIfPresent(Int.self, forKey: .viewCount) ?? views.count
+        isDemo = try c.decodeIfPresent(Bool.self, forKey: .isDemo) ?? false
+        schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? Self.photographicKind
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        syncState = try c.decodeIfPresent(ObjectSyncState.self, forKey: .syncState) ?? .local
+        remoteId = try c.decodeIfPresent(String.self, forKey: .remoteId)
+        arUrl = try c.decodeIfPresent(String.self, forKey: .arUrl)
+        deepLink = try c.decodeIfPresent(String.self, forKey: .deepLink)
+        lastUploadError = try c.decodeIfPresent(String.self, forKey: .lastUploadError)
+        objectDescription = try c.decodeIfPresent(String.self, forKey: .objectDescription)
+            ?? c.decodeIfPresent(String.self, forKey: .description)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(widthCm, forKey: .widthCm)
+        try c.encode(viewCount, forKey: .viewCount)
+        try c.encode(isDemo, forKey: .isDemo)
+        try c.encode(schemaVersion, forKey: .schemaVersion)
+        try c.encode(kind, forKey: .kind)
+        try c.encodeIfPresent(notes, forKey: .notes)
+        try c.encode(views, forKey: .views)
+        try c.encode(syncState, forKey: .syncState)
+        try c.encodeIfPresent(remoteId, forKey: .remoteId)
+        try c.encodeIfPresent(arUrl, forKey: .arUrl)
+        try c.encodeIfPresent(deepLink, forKey: .deepLink)
+        try c.encodeIfPresent(lastUploadError, forKey: .lastUploadError)
+        try c.encodeIfPresent(objectDescription, forKey: .objectDescription)
+    }
+
+    var isRemoteAvailable: Bool {
+        remoteId != nil || (arUrl?.isEmpty == false)
     }
 }
 
@@ -133,7 +204,7 @@ struct QualityWarning: Identifiable, Equatable {
     }
 }
 
-/// Future architecture hook (not built in MVP): Restaurant → Dish → AR Object → QR.
+/// Phase 2 extension point: capture → upload → permanent arUrl → QR → native remote AR.
 enum FutureArchitecture {
-    static let note = "Reserved for Restaurant → Dish → photographic AR Object → QR → Customer Web Viewer."
+    static let note = "Phase 2: photographic AR Object → upload → permanent arUrl → QR → native iOS remote viewer (arfood://)."
 }

@@ -82,6 +82,7 @@ struct ObjectRow: View {
                             .padding(.vertical, 2)
                             .background(AppTheme.accent, in: Capsule())
                     }
+                    SyncStateBadge(state: object.syncState)
                 }
                 Text(object.createdAt.formatted(date: .abbreviated, time: .omitted))
                     .font(.system(size: 13, weight: .medium, design: .rounded))
@@ -103,6 +104,37 @@ struct ObjectRow: View {
     }
 }
 
+struct SyncStateBadge: View {
+    let state: ObjectSyncState
+
+    var body: some View {
+        Text(state.badgeTitle)
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(background, in: Capsule())
+    }
+
+    private var foreground: Color {
+        switch state {
+        case .failed: return .white
+        case .uploading: return .black
+        default: return .white.opacity(0.9)
+        }
+    }
+
+    private var background: Color {
+        switch state {
+        case .local: return Color.white.opacity(0.12)
+        case .uploading: return AppTheme.accent.opacity(0.85)
+        case .remote: return Color.blue.opacity(0.45)
+        case .ready: return Color.green.opacity(0.45)
+        case .failed: return Color.red.opacity(0.55)
+        }
+    }
+}
+
 struct ObjectDetailView: View {
     @Binding var path: NavigationPath
     let objectID: String
@@ -110,6 +142,7 @@ struct ObjectDetailView: View {
     @State private var shareURL: URL?
     @State private var showShare = false
     @State private var confirmDelete = false
+    @State private var showQR = false
 
     var object: FoodObject? {
         store.object(id: objectID) ?? store.reloadObject(id: objectID)
@@ -119,63 +152,88 @@ struct ObjectDetailView: View {
         ZStack {
             ScreenBackground()
             if let object {
-                VStack(spacing: 20) {
-                    HStack {
-                        Button { path.removeLast() } label: {
-                            Image(systemName: "chevron.left")
-                                .foregroundStyle(.white)
-                                .padding(10)
-                                .background(Color.white.opacity(0.08), in: Circle())
+                ScrollView {
+                    VStack(spacing: 20) {
+                        HStack {
+                            Button { path.removeLast() } label: {
+                                Image(systemName: "chevron.left")
+                                    .foregroundStyle(.white)
+                                    .padding(10)
+                                    .background(Color.white.opacity(0.08), in: Circle())
+                            }
+                            Spacer()
+                            SyncStateBadge(state: object.syncState)
                         }
-                        Spacer()
-                    }
 
-                    if let thumb = store.loadThumbnail(for: object) {
-                        Image(uiImage: thumb)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 220)
-                    }
+                        if let thumb = store.loadThumbnail(for: object) {
+                            Image(uiImage: thumb)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 220)
+                        }
 
-                    Text(object.name)
-                        .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.white)
+                        Text(object.name)
+                            .font(.system(size: 28, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
 
-                    Text("\(object.viewCount) photographic views · \(object.widthCm, specifier: "%.0f") cm wide")
-                        .foregroundStyle(AppTheme.textSecondary)
+                        Text("\(object.viewCount) photographic views · \(object.widthCm, specifier: "%.0f") cm wide")
+                            .foregroundStyle(AppTheme.textSecondary)
 
-                    Spacer()
+                        if let err = object.lastUploadError, object.syncState == .failed {
+                            Text(err)
+                                .font(.footnote)
+                                .foregroundStyle(.red.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                        }
 
-                    Button("VIEW IN AR") {
-                        path.append(Route.ar(id: object.id))
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
+                        if let arUrl = object.arUrl, object.isRemoteAvailable {
+                            RemoteSharePanel(arUrl: arUrl, deepLink: object.deepLink)
+                        }
 
-                    Button("RECENTRE") {
-                        // Opens AR with a fresh placement pass (tap plane to place again).
-                        path.append(Route.ar(id: object.id))
-                    }
-                    .buttonStyle(PrimaryButtonStyle(filled: false))
+                        Button("VIEW IN AR") {
+                            path.append(Route.ar(id: object.id))
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
 
-                    Button("SHARE PACKAGE") {
-                        do {
-                            shareURL = try ObjectExporter.makeSharePackage(for: object, store: store)
-                            showShare = true
-                        } catch {
-                            // silent
+                        if object.syncState == .local || object.syncState == .failed || (object.isDemo && !object.isRemoteAvailable) {
+                            Button(object.syncState == .failed ? "RETRY UPLOAD" : "UPLOAD OBJECT") {
+                                path.append(Route.upload(id: object.id))
+                            }
+                            .buttonStyle(PrimaryButtonStyle(filled: false))
+                        }
+
+                        if object.isRemoteAvailable, object.arUrl != nil {
+                            Button("QR CODE") {
+                                showQR = true
+                            }
+                            .buttonStyle(PrimaryButtonStyle(filled: false))
+                        }
+
+                        Button("RECENTRE") {
+                            path.append(Route.ar(id: object.id))
+                        }
+                        .buttonStyle(PrimaryButtonStyle(filled: false))
+
+                        Button("SHARE PACKAGE") {
+                            do {
+                                shareURL = try ObjectExporter.makeSharePackage(for: object, store: store)
+                                showShare = true
+                            } catch {
+                                // silent
+                            }
+                        }
+                        .buttonStyle(PrimaryButtonStyle(filled: false))
+
+                        if !object.isDemo {
+                            Button("DELETE") {
+                                confirmDelete = true
+                            }
+                            .foregroundStyle(.red.opacity(0.9))
+                            .padding(.top, 8)
                         }
                     }
-                    .buttonStyle(PrimaryButtonStyle(filled: false))
-
-                    if !object.isDemo {
-                        Button("DELETE") {
-                            confirmDelete = true
-                        }
-                        .foregroundStyle(.red.opacity(0.9))
-                        .padding(.top, 8)
-                    }
+                    .padding(28)
                 }
-                .padding(28)
                 .confirmationDialog("Delete this object?", isPresented: $confirmDelete) {
                     Button("Delete", role: .destructive) {
                         try? store.delete(object)
@@ -185,6 +243,11 @@ struct ObjectDetailView: View {
                 .sheet(isPresented: $showShare) {
                     if let shareURL {
                         ShareSheet(items: [shareURL])
+                    }
+                }
+                .sheet(isPresented: $showQR) {
+                    if let arUrl = object.arUrl {
+                        ObjectQRView(arUrl: arUrl, title: object.name)
                     }
                 }
             } else {

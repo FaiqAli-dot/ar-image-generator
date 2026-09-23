@@ -2,9 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var store: ObjectLibraryStore
+    @EnvironmentObject private var deepLinks: DeepLinkRouter
     @State private var path = NavigationPath()
     @State private var versionTapCount = 0
     @State private var showDebug = false
+    @State private var remoteLoadError: String?
+    @State private var isLoadingRemote = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -41,7 +44,7 @@ struct HomeView: View {
                     .padding(.horizontal, 28)
                     .padding(.bottom, 36)
 
-                    Text("v1.0.0")
+                    Text("v2.0.0")
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(AppTheme.textSecondary.opacity(0.7))
                         .padding(.bottom, 18)
@@ -52,6 +55,18 @@ struct HomeView: View {
                                 showDebug = true
                             }
                         }
+                }
+
+                if isLoadingRemote {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .tint(AppTheme.accent)
+                        Text("Loading remote object…")
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
             }
             .navigationBarHidden(true)
@@ -67,6 +82,8 @@ struct HomeView: View {
                     ProcessingView(path: $path, frames: frames, widthCm: widthCm, objectName: name)
                 case .ready(let id):
                     ObjectReadyView(path: $path, objectID: id)
+                case .upload(let id):
+                    UploadObjectView(path: $path, objectID: id)
                 case .library:
                     MyObjectsView(path: $path)
                 case .detail(let id):
@@ -83,8 +100,52 @@ struct HomeView: View {
                 CaptureDebugView()
                     .environmentObject(store)
             }
+            .alert("Remote object", isPresented: Binding(
+                get: { remoteLoadError != nil },
+                set: { if !$0 { remoteLoadError = nil } }
+            )) {
+                Button("OK", role: .cancel) { remoteLoadError = nil }
+            } message: {
+                Text(remoteLoadError ?? "")
+            }
+            .onChange(of: deepLinks.pendingURL) { _, url in
+                guard let url else { return }
+                deepLinks.pendingURL = nil
+                handleDeepLink(url)
+            }
+            .onAppear {
+                if let url = deepLinks.pendingURL {
+                    deepLinks.pendingURL = nil
+                    handleDeepLink(url)
+                }
+            }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        if RemoteObjectService.isCaptureDeepLink(url) {
+            path.append(Route.instructions)
+            return
+        }
+        guard let remoteId = RemoteObjectService.remoteId(from: url) else { return }
+        if let existing = store.object(remoteId: remoteId) {
+            path.append(Route.ar(id: existing.id))
+            return
+        }
+        Task {
+            isLoadingRemote = true
+            defer { isLoadingRemote = false }
+            do {
+                let object = try await RemoteObjectService.shared.downloadAndInstall(
+                    remoteId: remoteId,
+                    store: store
+                )
+                path.append(Route.ar(id: object.id))
+            } catch {
+                remoteLoadError = error.localizedDescription
+            }
+        }
     }
 }
 
@@ -94,6 +155,7 @@ enum Route: Hashable {
     case capture(widthCm: Double, name: String)
     case processing(frames: [RawCaptureFrameProxy], widthCm: Double, name: String)
     case ready(id: String)
+    case upload(id: String)
     case library
     case detail(id: String)
     case ar(id: String)
@@ -114,4 +176,10 @@ final class CaptureDraftStore: ObservableObject {
     var widthCm: Double = 12
     var name: String = "Food"
     var warnings: [QualityWarning] = []
+}
+
+/// Routes incoming `arfood://` / HTTPS AR URLs into the navigation stack.
+@MainActor
+final class DeepLinkRouter: ObservableObject {
+    @Published var pendingURL: URL?
 }

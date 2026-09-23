@@ -5,6 +5,8 @@ DerivedData/
 .build/
 .venv/
 optional-backend/.venv/
+backend/node_modules/
+backend/data/
 __pycache__/
 *.pyc
 .idea/
@@ -13,3 +15,4 @@ __pycache__/
 *.ipa
 *.dSYM.zip
 *.dSYM
+.env
