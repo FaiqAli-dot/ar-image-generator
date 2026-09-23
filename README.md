@@ -1,103 +1,77 @@
 # AR Food Capture
 
-Native iPhone MVP that captures a real dish from ~72 guided photo angles, removes backgrounds, and places a **photographic** AR object in the room using multi-view transparent images — not photogrammetry, not `.glb` / `.obj` meshes, not AI 3D.
+Native iPhone app that captures a dish from ~72 guided photo angles, removes backgrounds, and places a **photographic** AR object using multi-view transparent images — not photogrammetry, not meshes, not AI 3D.
 
-**Core pipeline:** real photographs → multi-angle views → transparent cutouts → ARKit/RealityKit view switching.
+**Phase 2** adds: upload real views → Node backend persistence → permanent `arUrl` → QR → remote load in the same native photographic AR viewer.
 
 ## What’s in this repo
 
 | Path | Purpose |
 |------|---------|
 | `ARFoodCapture/` | Xcode iOS app (SwiftUI + AVFoundation + Vision + ARKit/RealityKit) |
-| `ARFoodCapture/ARFoodCapture/Resources/DemoBurger/` | Preloaded DEMO BURGER (72 transparent views) |
-| `optional-backend/` | Optional free-tier rembg API if on-device Vision isn’t enough |
+| `ARFoodCapture/.../Resources/DemoBurger/` | Preloaded DEMO BURGER (72 transparent views) |
+| `backend/` | **Phase 2** Node/Express object API (real PNG storage + permanent AR URLs) |
+| `optional-backend/` | Optional rembg background-removal helper (not the object API) |
+| `docs/` | Deploy + iOS API configuration |
 
 ## Requirements
 
 - Mac with **Xcode 15+**
 - Physical **iPhone** with A12+ (ARKit) running **iOS 17+**
-- Apple ID (free) for device signing, or a paid Developer account
+- Node 20+ for the object API (local or deployed)
 
 Simulator can open UI screens, but **camera capture + AR placement must be tested on a real iPhone**.
 
 ## Open & build
 
-1. Clone this repo and open:
-
 ```bash
 open ARFoodCapture/ARFoodCapture.xcodeproj
 ```
 
-2. In Xcode, select the **ARFoodCapture** scheme and your connected iPhone as the run destination.
-3. Select the **ARFoodCapture** target → **Signing & Capabilities**:
-   - Enable **Automatically manage signing**
-   - Choose your **Team** (personal Apple ID is fine)
-   - Change **Bundle Identifier** if needed (default `com.arfood.capture`) to something unique
-4. On the iPhone: **Settings → Privacy & Security → Developer Mode** (iOS 16+) → On, then reboot if prompted.
-5. Trust the developer certificate on device: **Settings → General → VPN & Device Management** → trust your app developer.
-6. Press **Run** (▶). Allow Camera and Motion when prompted.
+Signing, Developer Mode, and trust steps: see [docs/ios-api-config.md](docs/ios-api-config.md).
 
-### First-time cable install tips
+### API base URL
 
-- Unlock the phone and tap **Trust** when macOS asks.
-- If Run fails with a signing error, pick a different bundle ID and re-select your Team.
-- If the app won’t launch: Settings → General → VPN & Device Management → Trust.
+Set `ARFoodAPIBaseURL` in `Info.plist` to your backend origin (empty + Debug → `http://127.0.0.1:3000`). Release builds require an explicit HTTPS URL — never ship hardcoded localhost.
 
-## App flow
+## Local object API
 
-1. **Home** — `CAPTURE NEW FOOD` / `MY OBJECTS` (dark premium UI). Tap version `v1.0.0` five times for **CAPTURE DEBUG**.
-2. **Instructions** → **width in cm** + name → guided capture.
-3. **Pass 1** — walk around at side height; auto-captures every ~10° (36 views). AE/WB/focus lock after start.
-4. **Pass 2** — raise phone slightly; another 36 views (~72 total).
-5. Quality warnings (if any) → **PROCESS OBJECT** (Vision background removal → transparent PNGs).
-6. **VIEW IN AR** — detect table plane, tap to place, walk around; photographs switch by viewing angle. Rotate / Reset / Remove.
-7. **MY OBJECTS** — library with demo + your captures; Share package / Recentre / Delete.
+```bash
+cd backend && npm install && npm start
+# tests: npm test
+```
+
+Deploy guide: [docs/deploy-backend.md](docs/deploy-backend.md).
+
+## App flow (Phase 2)
+
+1. **Home** — `CAPTURE NEW FOOD` / `MY OBJECTS`
+2. Guided capture + Vision processing (unchanged from MVP)
+3. **OBJECT READY** → **VIEW IN AR** or **UPLOAD OBJECT** (name, widthCm, description)
+4. Upload shows progress → backend stores PNGs → returns permanent `arUrl` → real QR + copy/share
+5. **MY OBJECTS** states: `LOCAL` / `UPLOADING` / `REMOTE` / `READY` / `FAILED`
+6. Customer scans object QR (`/ar/{id}`) → deep link → native plane place + photographic view switching + `widthCm` scale
+7. **DEMO BURGER** still works locally and can be uploaded to prove the remote path
+8. Capture QR (`/capture` or `arfood://capture`) opens capture instructions
 
 ## Photographic AR (not 3D mesh)
 
-The renderer stores transparent images tagged with azimuth + elevation. At runtime it:
+Same MVP renderer: transparent images tagged with azimuth + elevation; billboard plane scaled from `widthCm`. Local and remote objects share `PhotographicImageProviding` → `PhotographicViewSelector`.
 
-1. Measures camera position relative to the placed object
-2. Picks the nearest captured view (optional neighbor blend)
-3. Draws that photograph on a billboard plane at real-world width (cm → meters)
-
-## Demo object
-
-**DEMO BURGER** ships in the app bundle and is copied into local storage on launch so you can open **MY OBJECTS → DEMO BURGER → VIEW IN AR** immediately without capturing.
-
-## Optional backend
-
-On-device Vision is default. If you need open-source server-side cutouts, see [`optional-backend/README.md`](optional-backend/README.md). Set `BackgroundRemovalAPIBaseURL` in `Info.plist` to your base URL.
-
-## Export package
-
-**Share Package** builds `object.json` + `images/` + `thumbnail/` as a zip for handoff. Same layout is reserved for a future Restaurant → Dish → QR → web viewer path (not built in this MVP).
-
-## Architecture notes
+## Architecture
 
 ```
-Home → Capture (AVFoundation + CoreMotion guide)
-     → Process (Vision foreground mask → RGBA PNG)
-     → Library (Application Support persistence)
-     → AR (ARKit planes + RealityKit UnlitMaterial billboards)
+Home → Capture → Process → Library (local)
+                 ↘ Upload → backend /api/objects → arUrl + QR
+Customer → HTTPS /ar/{id} → arfood://object/{id} → download cache → same AR viewer
 ```
 
-`FutureArchitecture` in code documents the restaurant/QR extension point without implementing accounts, payments, or QR.
+## Limitations (honest)
 
-## Project layout (app)
-
-```
-ARFoodCapture/
-  ARFoodCaptureApp.swift
-  Models/           FoodObject, CapturedView metadata
-  Services/         Camera, motion guide, Vision BG removal, pipeline, store, export
-  Capture/          Instructions, guided capture UI, processing
-  AR/               Photographic view selector + AR screen
-  Library/          Home, My Objects, detail
-  Debug/            Capture debug sheet
-  Theme/            Dark premium styling
-  Resources/DemoBurger/
-```
+- This Linux/cloud agent environment **cannot** run Xcode, ARKit, or a physical iPhone. Backend tests run here; full capture/AR verification requires a Mac + device.
+- Browser WebXR was intentionally **not** built — photographic billboard switching is more reliable in the native app.
+- MVP backend has **no auth**; protect write endpoints in production networks if needed.
+- Free-tier hosts sleep and need a **persistent disk** for uploads.
 
 ## License
 
