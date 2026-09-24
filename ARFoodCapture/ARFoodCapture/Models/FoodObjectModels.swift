@@ -170,8 +170,28 @@ enum CapturePass: Int, CaseIterable {
 
     var instruction: String {
         switch self {
-        case .horizontal: return "Capture from around the sides."
-        case .elevated: return "Raise the phone slightly. Capture from above."
+        case .horizontal:
+            return "Hold the phone upright at food height. Walk slowly around the dish — ticks fill in automatically. Keep the food centered."
+        case .elevated:
+            return "Raise the phone and tilt it slightly down toward the food. Walk the same circle again."
+        }
+    }
+
+    /// Short lines for pass intro overlays.
+    var introBullets: [String] {
+        switch self {
+        case .horizontal:
+            return [
+                "Hold phone upright at table / food height",
+                "Walk a slow full circle — photos auto-capture",
+                "Watch ring ticks light up; keep the dish centered"
+            ]
+        case .elevated:
+            return [
+                "Raise phone a little and look slightly down",
+                "Walk the same circle again — same slow pace",
+                "Ticks fill automatically; keep the dish centered"
+            ]
         }
     }
 

@@ -43,10 +43,22 @@ cd backend && npm install && npm start
 
 Deploy guide: [docs/deploy-backend.md](docs/deploy-backend.md).
 
+## How to capture (guided walk-around)
+
+There is **no shutter**. The app auto-captures ~72 photos from device motion as you orbit the dish.
+
+1. Place food on a flat surface with even light; stand ~40–50 cm away with the whole dish in frame.
+2. **Pass 1 (sides):** hold the phone upright at food height; walk a slow full circle. Ring ticks fill automatically.
+3. **Pass 2 (slightly above):** raise the phone, tilt slightly down, walk the same circle again.
+4. White needle = your angle; filled ticks = captured; bright tick = next target. Move slowly until all ticks light up.
+5. If a tick won’t fill while you hold that angle, use **Capture now** as a manual fallback for the nearest slot.
+
+Elevation coaching (“Lower the phone to table height” / “Raise phone and look slightly down”) means the phone pitch is outside the soft band for the current pass — adjust height/tilt, then keep walking.
+
 ## App flow (Phase 2)
 
 1. **Home** — `CAPTURE NEW FOOD` / `MY OBJECTS`
-2. Guided capture + Vision processing (unchanged from MVP)
+2. Guided capture + Vision processing (MVP capture engine; UX coaching improved)
 3. **OBJECT READY** → **VIEW IN AR** or **UPLOAD OBJECT** (name, widthCm, description)
 4. Upload shows progress → backend stores PNGs → returns permanent `arUrl` → real QR + copy/share
 5. **MY OBJECTS** states: `LOCAL` / `UPLOADING` / `REMOTE` / `READY` / `FAILED`

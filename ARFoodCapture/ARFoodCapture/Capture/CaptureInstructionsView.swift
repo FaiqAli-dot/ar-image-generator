@@ -3,6 +3,14 @@ import SwiftUI
 struct CaptureInstructionsView: View {
     @Binding var path: NavigationPath
 
+    private let steps: [(String, String)] = [
+        ("1", "Place the food on a flat surface with good, even light."),
+        ("2", "Stand about 40–50 cm away so the whole dish stays in frame."),
+        ("3", "You will walk a full circle twice — sides first, then slightly above."),
+        ("4", "The app takes photos automatically. There is no shutter — do not tap to shoot."),
+        ("5", "Move slowly so every tick on the ring fills in as you orbit.")
+    ]
+
     var body: some View {
         ZStack {
             ScreenBackground()
@@ -18,17 +26,21 @@ struct CaptureInstructionsView: View {
                     .font(.system(size: 34, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Place the food on a flat surface.")
+                Text("Guided walk-around — about 72 photos")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    tip("Keep the food still")
-                    tip("Use good lighting")
-                    tip("Keep the camera at a consistent distance")
-                    tip("Make sure the entire food item is visible")
+                Text("Photos capture from your motion. Walk slowly, keep the dish centered, and watch the ring fill in.")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(steps, id: \.0) { step in
+                        numberedStep(step.0, step.1)
+                    }
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
 
                 Spacer()
 
@@ -42,13 +54,17 @@ struct CaptureInstructionsView: View {
         .navigationBarHidden(true)
     }
 
-    private func tip(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text("•")
-                .foregroundStyle(AppTheme.accent)
+    private func numberedStep(_ number: String, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.black)
+                .frame(width: 26, height: 26)
+                .background(AppTheme.accent, in: Circle())
             Text(text)
                 .foregroundStyle(AppTheme.textSecondary)
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
