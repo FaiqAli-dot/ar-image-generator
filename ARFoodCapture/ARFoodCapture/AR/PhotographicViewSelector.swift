@@ -18,6 +18,8 @@ final class PhotographicViewSelector: ObservableObject {
     let object: FoodObject
     private var textures: [String: TextureResource] = [:]
     private var images: [String: CGImage] = [:]
+    /// Opaque content bounds in image space (origin top-left, 0…1) for upright placement.
+    private var contentBounds: [String: CutoutContentBounds] = [:]
     private var lastFrameTime: CFTimeInterval = 0
     private var frameCount = 0
 
@@ -31,16 +33,28 @@ final class PhotographicViewSelector: ObservableObject {
 
     func preload(provider: PhotographicImageProviding) {
         for view in object.views {
-            if let ui = provider.loadUIImage(named: view.image), let cg = ui.cgImage {
-                images[view.image] = cg
-                if let tex = try? TextureResource.generate(from: cg, options: TextureResource.CreateOptions(semantic: .color)) {
-                    textures[view.image] = tex
-                }
+            guard let ui = provider.loadUIImage(named: view.image) else { continue }
+            let upright = ui.normalizedUp()
+            guard let cg = upright.cgImage else { continue }
+            // RealityKit UnlitMaterial on generatePlane often samples CGImage with V flipped
+            // relative to UIKit — flip vertically so food is right-side-up in AR.
+            let forTexture = PhotographicARMath.flipVertically(cg) ?? cg
+            images[view.image] = forTexture
+            contentBounds[view.image] = CutoutContentBounds.analyze(cg)
+            if let tex = try? TextureResource.generate(
+                from: forTexture,
+                options: TextureResource.CreateOptions(semantic: .color)
+            ) {
+                textures[view.image] = tex
             }
         }
     }
 
     func texture(named name: String) -> TextureResource? { textures[name] }
+
+    func cutoutBounds(named name: String) -> CutoutContentBounds {
+        contentBounds[name] ?? .fullFrame
+    }
 
     func updateViewer(relativeAzimuth: Double, elevation: Double) {
         viewerAzimuth = CapturedView.normalizeAzimuth(relativeAzimuth)
@@ -106,6 +120,71 @@ final class PhotographicViewSelector: ObservableObject {
     }
 }
 
+/// Opaque cutout bounds in upright image space (origin top-left, normalized 0…1).
+struct CutoutContentBounds: Equatable {
+    var minX: CGFloat
+    var minY: CGFloat
+    var maxX: CGFloat
+    var maxY: CGFloat
+
+    static let fullFrame = CutoutContentBounds(minX: 0, minY: 0, maxX: 1, maxY: 1)
+
+    var midX: CGFloat { (minX + maxX) * 0.5 }
+
+    static func analyze(_ cgImage: CGImage, alphaThreshold: UInt8 = 20) -> CutoutContentBounds {
+        let w = cgImage.width
+        let h = cgImage.height
+        guard w > 2, h > 2 else { return .fullFrame }
+
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(
+            data: &pixels,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: w * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return .fullFrame }
+
+        // Draw with UIKit-style top-left origin into this buffer.
+        ctx.translateBy(x: 0, y: CGFloat(h))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
+
+        var minX = w, minY = h, maxX = 0, maxY = 0
+        var found = false
+        // Sparse scan for speed.
+        let step = max(1, min(w, h) / 128)
+        var y = 0
+        while y < h {
+            var x = 0
+            while x < w {
+                let a = pixels[(y * w + x) * 4 + 3]
+                if a >= alphaThreshold {
+                    found = true
+                    if x < minX { minX = x }
+                    if x > maxX { maxX = x }
+                    if y < minY { minY = y }
+                    if y > maxY { maxY = y }
+                }
+                x += step
+            }
+            y += step
+        }
+        guard found else { return .fullFrame }
+        // Pad slightly so we don't clip soft edges.
+        let padX = CGFloat(step) / CGFloat(w)
+        let padY = CGFloat(step) / CGFloat(h)
+        return CutoutContentBounds(
+            minX: max(0, CGFloat(minX) / CGFloat(w) - padX),
+            minY: max(0, CGFloat(minY) / CGFloat(h) - padY),
+            maxX: min(1, CGFloat(maxX) / CGFloat(w) + padX),
+            maxY: min(1, CGFloat(maxY) / CGFloat(h) + padY)
+        )
+    }
+}
+
 enum PhotographicARMath {
     /// Azimuth of camera around object on horizontal plane (degrees).
     static func relativeAzimuth(cameraWorld: SIMD3<Float>, objectWorld: SIMD3<Float>, objectYaw: Float) -> Double {
@@ -124,5 +203,36 @@ enum PhotographicARMath {
 
     static func metersFromWidthCm(_ cm: Double) -> Float {
         Float(cm / 100.0)
+    }
+
+    /// Vertical flip for RealityKit texture upload (CG ↔ Metal V).
+    static func flipVertically(_ image: CGImage) -> CGImage? {
+        let w = image.width
+        let h = image.height
+        let colorSpace = image.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+        guard let ctx = CGContext(
+            data: nil,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+        ctx.translateBy(x: 0, y: CGFloat(h))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return ctx.makeImage()
+    }
+
+    /// Billboard local position so opaque cutout sits upright, centered, resting on the placement point.
+    /// Plane is 1×1 in XY before scale; +Y is up; texture is assumed upright after `flipVertically`.
+    static func billboardPosition(widthM: Float, bounds: CutoutContentBounds) -> SIMD3<Float> {
+        let x = Float(0.5 - bounds.midX) * widthM
+        // Image top → plane +Y. Content bottom at normalized maxY from top → local Y = 0.5 - maxY.
+        // Want content bottom at world y ≈ 0 → position.y + (0.5 - maxY) * widthM = 0
+        let y = Float(bounds.maxY - 0.5) * widthM
+        return SIMD3<Float>(x, y, 0)
     }
 }

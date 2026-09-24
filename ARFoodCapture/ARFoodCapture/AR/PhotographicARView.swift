@@ -240,15 +240,20 @@ struct PhotographicARViewContainer: UIViewRepresentable {
             let widthM = PhotographicARMath.metersFromWidthCm(object.widthCm)
             baseScale = widthM
 
+            let firstName = object.views.first?.image
+            let bounds = firstName.map { selector.cutoutBounds(named: $0) } ?? .fullFrame
+            let localPos = PhotographicARMath.billboardPosition(widthM: widthM, bounds: bounds)
+
             let plane = MeshResource.generatePlane(width: 1, height: 1)
             var mat = UnlitMaterial()
             mat.blending = .transparent(opacity: 1.0)
-            if let first = object.views.first, let tex = selector.texture(named: first.image) {
+            if let firstName, let tex = selector.texture(named: firstName) {
                 mat.color = .init(texture: .init(tex))
-                lastTextureName = first.image
+                lastTextureName = firstName
             }
             let entity = ModelEntity(mesh: plane, materials: [mat])
-            entity.position = [0, widthM * 0.5, 0]
+            // Sit opaque cutout on the placement point, horizontally centered (not bare plane center).
+            entity.position = localPos
             entity.scale = [widthM, widthM, widthM]
             // generatePlane(width:height:) lies in XY (already upright in world space).
             entity.orientation = simd_quatf(angle: 0, axis: [0, 1, 0])
@@ -258,7 +263,7 @@ struct PhotographicARViewContainer: UIViewRepresentable {
             var blendMat = UnlitMaterial()
             blendMat.blending = .transparent(opacity: 0.0)
             let blend = ModelEntity(mesh: plane, materials: [blendMat])
-            blend.position = [0, widthM * 0.5, 0.001]
+            blend.position = localPos + SIMD3<Float>(0, 0, 0.001)
             blend.scale = [widthM, widthM, widthM]
             blend.orientation = simd_quatf(angle: 0, axis: [0, 1, 0])
             anchor.addChild(blend)
@@ -321,6 +326,12 @@ struct PhotographicARViewContainer: UIViewRepresentable {
                 mat.color = .init(texture: .init(tex))
                 billboard.model?.materials = [mat]
                 lastTextureName = view.image
+                let bounds = selector.cutoutBounds(named: view.image)
+                let localPos = PhotographicARMath.billboardPosition(widthM: baseScale, bounds: bounds)
+                billboard.position = localPos
+                if let blendBillboard {
+                    blendBillboard.position = localPos + SIMD3<Float>(0, 0, 0.001)
+                }
             }
 
             if let blend = blendBillboard {

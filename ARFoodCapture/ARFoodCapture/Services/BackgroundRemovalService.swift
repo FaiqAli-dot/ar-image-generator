@@ -61,7 +61,8 @@ actor BackgroundRemovalService {
               let outCG = ciContext.createCGImage(output, from: color.extent) else {
             throw BackgroundRemovalError.renderFailed
         }
-        return UIImage(cgImage: outCG)
+        // Always bake upright pixels — AR / PNG must not rely on UIImage.Orientation EXIF.
+        return UIImage(cgImage: outCG, scale: 1, orientation: .up)
     }
 
     private func remoteFallback(image: UIImage) async throws -> UIImage {
@@ -126,7 +127,7 @@ actor BackgroundRemovalService {
             }
         }
         guard let out = ctx.makeImage() else { return image }
-        return UIImage(cgImage: out, scale: image.scale, orientation: image.imageOrientation)
+        return UIImage(cgImage: out, scale: image.scale, orientation: .up)
     }
 
     private func cgOrientation(_ orientation: UIImage.Orientation) -> CGImagePropertyOrientation {

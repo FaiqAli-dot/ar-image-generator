@@ -171,9 +171,9 @@ enum CapturePass: Int, CaseIterable {
     var instruction: String {
         switch self {
         case .horizontal:
-            return "Keep the phone still at food height. Rotate the dish on a turntable — ticks fill as object orientation hits each angle. Keep the food centered."
+            return "Freeze the phone at food height. Rotate the dish on a turntable. Tap CAPTURE NEXT each ~10°. Do not spin the phone."
         case .elevated:
-            return "Raise the phone once and tilt slightly down. Keep the phone still, then rotate the dish through a full circle again."
+            return "Raise the phone ~15 cm and tilt down slightly once (~15°) — not a flip. Freeze, then rotate the dish again with CAPTURE NEXT."
         }
     }
 
@@ -182,15 +182,15 @@ enum CapturePass: Int, CaseIterable {
         switch self {
         case .horizontal:
             return [
-                "Keep phone still at table / food height",
-                "Rotate the object slowly through 360° — photos auto-capture when ready",
-                "Watch ring ticks light up; use CAPTURE NEXT if a tick stalls"
+                "Freeze phone at table / food height — do not walk or spin it",
+                "Rotate only the DISH on the turntable",
+                "Tap CAPTURE NEXT after each ~10° dish turn (primary control)"
             ]
         case .elevated:
             return [
-                "Raise phone a little and look slightly down — then hold still",
-                "Rotate the object through 360° again at this height",
-                "Ticks fill when the frame is green (READY TO CAPTURE)"
+                "Raise ~15 cm + slight look-down once — never a 180° phone flip",
+                "Freeze the phone again; rotate only the dish",
+                "CAPTURE NEXT each step until the ring fills"
             ]
         }
     }

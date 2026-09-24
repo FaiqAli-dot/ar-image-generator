@@ -20,11 +20,17 @@
 
 ## UI (reuses PR #3 frame / arrows / ring)
 
-- ROTATE OBJECT ↻/↺ (was walk left/right)
-- Green frame = **READY TO CAPTURE** (next object orientation)
-- **CAPTURE NEXT** fallback
-- Current / Next angle · rotate X° more · Phone stable ✓
+- DISH ↻/↺ arrows (not phone orbit)
+- Green frame = phone still enough for **CAPTURE NEXT** (primary) — does **not** wait on Vision / phone yaw
+- CAPTURE NEXT always works (soft elevation coaching only; never hard-blocked)
+- Vision ingest **disabled while phone is moving** (prevents “spin phone to capture”)
+- Pass 2 = modest raise + slight tilt — never a 180° flip
 - Long-press `n / 72` → hidden rotation debug HUD
+
+## AR placement
+
+- Texture V-flip for RealityKit + upright baked cutouts
+- Billboard pivot from opaque alpha bounds (centered, resting on tap point)
 
 ## Limitations (honest)
 
