@@ -50,13 +50,14 @@ For best results:
 
 ## Guided 360° capture
 
-Guide the user around the food. Do NOT require manual shutter for every photo.
-Use motion/orientation sensors to determine camera angle.
-Show a circular capture guide.
-Auto-capture when camera reaches next capture position (~every 10°).
+**Phase 3:** Keep the phone roughly stationary; rotate the food on a turntable. Stored azimuth is **object orientation**, not phone yaw.
+Guide the user to rotate the object. Do NOT require manual shutter for every photo (CAPTURE NEXT is the reliable fallback).
+Optional lightweight Vision optical-flow assist may estimate object rotation; never invent object angle from phone gyro.
+Show a circular capture guide (needle = object angle).
+Auto-capture when object orientation reaches next capture position (~every 10°) and the phone is stable.
 Approximately 36 horizontal viewpoints (one every 10 degrees).
 
-Also try to keep camera at consistent distance — show recommended distance, warn if too close/far, but do not block capture.
+Phone-stability (CoreMotion) blocks auto-capture when the handset is moving significantly. Distance hint is soft only.
 
 ## Multiple elevations (2 passes)
 
@@ -65,8 +66,8 @@ Level B — slightly above: Camera slightly upward, another 36 images.
 Total ~72 images per food object.
 
 UI:
-PASS 1 OF 2 — Capture from around the sides. [ START ]
-Then: SIDE VIEW COMPLETE — Raise phone slightly. Capture from above. [ START TOP PASS ]
+PASS 1 OF 2 — Keep phone still; rotate object for side views. [ START ]
+Then: SIDE VIEW COMPLETE — Raise phone slightly once; rotate object again. [ START TOP PASS ]
 Then: 72 / 72 CAPTURE COMPLETE [ PROCESS OBJECT ]
 
 ## Image processing pipeline

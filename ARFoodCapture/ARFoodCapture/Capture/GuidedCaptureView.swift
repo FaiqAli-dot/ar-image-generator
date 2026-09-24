@@ -11,6 +11,8 @@ struct GuidedCaptureView: View {
     @State private var showElevatedIntro = false
     @State private var showComplete = false
     @State private var warnings: [QualityWarning] = []
+    /// Hidden rotation-tuning HUD (long-press progress). Not part of normal UX.
+    @State private var showRotationDebug = false
 
     private var showLiveGuides: Bool {
         session.isAutoArmed && !showPassIntro && !showElevatedIntro && !showComplete
@@ -37,7 +39,8 @@ struct GuidedCaptureView: View {
                     orbit: session.orbitGuidance,
                     elevation: session.elevationGuidance,
                     tint: alignmentBorderColor,
-                    label: session.nextTargetDirectionHint
+                    label: session.nextTargetDirectionHint,
+                    rotateMode: true
                 )
                 .allowsHitTesting(false)
             }
@@ -57,6 +60,9 @@ struct GuidedCaptureView: View {
                     Text(session.progressText)
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundStyle(.white)
+                        .onLongPressGesture(minimumDuration: 0.8) {
+                            showRotationDebug.toggle()
+                        }
                     Spacer()
                     Color.clear.frame(width: 36, height: 36)
                 }
@@ -71,9 +77,10 @@ struct GuidedCaptureView: View {
                 CircularCaptureGuide(
                     capturedSlots: session.capturedSlotsForCurrentPass,
                     nextTargetSlot: session.nextTargetSlot,
-                    currentAzimuth: session.motion.azimuthDegrees,
+                    currentAzimuth: session.objectAzimuthDegrees,
                     targetElevation: session.pass.targetElevationDegrees,
-                    currentElevation: session.motion.elevationDegrees
+                    currentElevation: session.motion.elevationDegrees,
+                    needleLabel: "object"
                 )
                 .frame(width: 220, height: 220)
                 .padding(.top, 4)
@@ -81,11 +88,17 @@ struct GuidedCaptureView: View {
                 ringLegend
                     .padding(.top, 2)
 
-                Text(session.motion.distanceStatus().message)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(session.motion.distanceStatus() == .good ? Color.green.opacity(0.9) : AppTheme.accent)
+                if let next = session.nextTargetSlot, let delta = session.azimuthDeltaToNextTarget {
+                    Text("Current \(Int(session.objectAzimuthDegrees.rounded()))° · Next \(next * 10)° · rotate \(Int(abs(delta).rounded()))° more")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.75))
+                }
 
-                Text("Stand ~\(Int(CaptureConstants.recommendedDistanceMeters * 100)) cm away · keep food centered")
+                Text(session.phoneStabilityLabel)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(session.motion.isPhoneStable ? Color.green.opacity(0.9) : Color.orange.opacity(0.95))
+
+                Text("Keep phone still · rotate object on turntable · food centered")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.45))
 
@@ -96,20 +109,26 @@ struct GuidedCaptureView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 2)
 
-                Text("Photos capture automatically — no shutter")
+                Text(session.isCaptureAligned
+                     ? "READY TO CAPTURE"
+                     : "Photos auto-capture when frame is green — or use CAPTURE NEXT")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(session.isCaptureAligned ? Color.green.opacity(0.9) : .white.opacity(0.5))
+
+                if showRotationDebug {
+                    rotationDebugPanel
+                }
 
                 Spacer()
 
                 if showLiveGuides {
-                    Button("CAPTURE NOW") {
+                    Button("CAPTURE NEXT") {
                         session.captureNearestManually()
                     }
                     .buttonStyle(PrimaryButtonStyle(filled: false))
                     .padding(.horizontal, 40)
                     .padding(.bottom, 4)
-                    Text("Use if a tick won’t fill while you hold that angle")
+                    Text("Reliable fallback — capture next object angle without Vision")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.4))
                         .multilineTextAlignment(.center)
@@ -129,7 +148,7 @@ struct GuidedCaptureView: View {
                 passOverlay(
                     title: "PASS 1 OF 2 — SIDES",
                     bullets: CapturePass.horizontal.introBullets,
-                    footer: "No shutter. Move slowly until every tick lights up.",
+                    footer: "Phone stays put. Rotate the object until every tick lights up.",
                     button: "START"
                 ) {
                     showPassIntro = false
@@ -141,7 +160,7 @@ struct GuidedCaptureView: View {
                 passOverlay(
                     title: "PASS 2 OF 2 — SLIGHTLY ABOVE",
                     bullets: CapturePass.elevated.introBullets,
-                    footer: "Same slow orbit. Photos still auto-capture.",
+                    footer: "Raise once, then keep the phone still and rotate again.",
                     button: "START TOP PASS"
                 ) {
                     showElevatedIntro = false
@@ -216,15 +235,34 @@ struct GuidedCaptureView: View {
         VStack(spacing: 4) {
             HStack(spacing: 14) {
                 legendItem(color: AppTheme.accent, label: "Filled = captured")
-                legendItem(color: .white, label: "Needle = you")
+                legendItem(color: .white, label: "Needle = object angle")
             }
-            Text("Walk until all ticks light up · bright tick = next target")
+            Text("Rotate object until ticks light up · bright tick = next target")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.45))
-            Text("Frame color: red = off · green = ready to capture")
+            Text("Frame: red = off · green = READY TO CAPTURE")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.4))
         }
+    }
+
+    private var rotationDebugPanel: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("ROTATION DEBUG")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundStyle(AppTheme.accent)
+            Text("phone yaw \(String(format: "%.1f", session.motion.phoneYawDegrees))°  pitch→el \(String(format: "%.1f", session.motion.elevationDegrees))°")
+            Text("object est \(String(format: "%.1f", session.objectAzimuthDegrees))°  target \( (session.nextTargetSlot ?? 0) * 10 )°")
+            Text("captured \(session.capturedSlotsForCurrentPass.count)/36  stable \(session.motion.isPhoneStable ? "Y" : "N")  motion \(String(format: "%.2f", session.motion.phoneMotionMagnitude))")
+            Text("vision \(session.rotation.trackingQuality.debugLabel)  Δ \(String(format: "%.1f", session.rotation.visionDeltaSinceAnchor))°  ready \(session.isCaptureAligned ? "Y" : "N")")
+            Text("src \(session.rotation.sourceDescription)")
+                .lineLimit(2)
+        }
+        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .foregroundStyle(.white.opacity(0.8))
+        .padding(10)
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 20)
     }
 
     private func legendItem(color: Color, label: String) -> some View {
@@ -288,7 +326,7 @@ struct GuidedCaptureView: View {
     }
 }
 
-/// Near-full-screen colored frame reflecting capture alignment.
+/// Near-full-screen colored frame reflecting capture alignment (READY TO CAPTURE when green).
 struct AlignmentFrameOverlay: View {
     let color: Color
     var pulse: Bool = false
@@ -306,24 +344,31 @@ struct AlignmentFrameOverlay: View {
     }
 }
 
-/// Edge arrows so the food center stays clear.
+/// Edge arrows so the food center stays clear. In rotate mode, LEFT/RIGHT mean rotate object.
 struct DirectionalGuidanceOverlay: View {
     let orbit: CaptureOrbitGuidance
     let elevation: CaptureElevationGuidance
     let tint: Color
     let label: String?
+    var rotateMode: Bool = true
 
     var body: some View {
         ZStack {
             if orbit == .left {
-                guidanceChevron(systemName: "chevron.left.circle.fill", label: "LEFT")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    .padding(.leading, 14)
+                guidanceChevron(
+                    systemName: rotateMode ? "arrow.counterclockwise.circle.fill" : "chevron.left.circle.fill",
+                    label: rotateMode ? "ROTATE ↺" : "LEFT"
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .padding(.leading, 14)
             }
             if orbit == .right {
-                guidanceChevron(systemName: "chevron.right.circle.fill", label: "RIGHT")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                    .padding(.trailing, 14)
+                guidanceChevron(
+                    systemName: rotateMode ? "arrow.clockwise.circle.fill" : "chevron.right.circle.fill",
+                    label: rotateMode ? "ROTATE ↻" : "RIGHT"
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .padding(.trailing, 14)
             }
             if elevation == .raise {
                 guidanceChevron(systemName: "chevron.up.circle.fill", label: "RAISE")
@@ -375,6 +420,8 @@ struct CircularCaptureGuide: View {
     let currentAzimuth: Double
     let targetElevation: Double
     let currentElevation: Double
+    /// Needle represents object orientation (Phase 3), not phone heading.
+    var needleLabel: String = "object"
 
     var body: some View {
         GeometryReader { geo in
@@ -408,7 +455,7 @@ struct CircularCaptureGuide: View {
                     }
                     .position(pt)
                 }
-                // Camera needle
+                // Object-orientation needle (not phone yaw)
                 let camAngle = (currentAzimuth - 90) * .pi / 180
                 Path { path in
                     path.move(to: center)
@@ -423,7 +470,7 @@ struct CircularCaptureGuide: View {
                     Text("\(Int(currentAzimuth))°")
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("el \(Int(currentElevation))° / \(Int(targetElevation))°")
+                    Text("\(needleLabel) · el \(Int(currentElevation))° / \(Int(targetElevation))°")
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.65))
                 }

@@ -171,9 +171,9 @@ enum CapturePass: Int, CaseIterable {
     var instruction: String {
         switch self {
         case .horizontal:
-            return "Hold the phone upright at food height. Walk slowly around the dish — ticks fill in automatically. Keep the food centered."
+            return "Keep the phone still at food height. Rotate the dish on a turntable — ticks fill as object orientation hits each angle. Keep the food centered."
         case .elevated:
-            return "Raise the phone and tilt it slightly down toward the food. Walk the same circle again."
+            return "Raise the phone once and tilt slightly down. Keep the phone still, then rotate the dish through a full circle again."
         }
     }
 
@@ -182,15 +182,15 @@ enum CapturePass: Int, CaseIterable {
         switch self {
         case .horizontal:
             return [
-                "Hold phone upright at table / food height",
-                "Walk a slow full circle — photos auto-capture",
-                "Watch ring ticks light up; keep the dish centered"
+                "Keep phone still at table / food height",
+                "Rotate the object slowly through 360° — photos auto-capture when ready",
+                "Watch ring ticks light up; use CAPTURE NEXT if a tick stalls"
             ]
         case .elevated:
             return [
-                "Raise phone a little and look slightly down",
-                "Walk the same circle again — same slow pace",
-                "Ticks fill automatically; keep the dish centered"
+                "Raise phone a little and look slightly down — then hold still",
+                "Rotate the object through 360° again at this height",
+                "Ticks fill when the frame is green (READY TO CAPTURE)"
             ]
         }
     }
@@ -212,6 +212,8 @@ enum CaptureConstants {
     static let recommendedDistanceMeters: Double = 0.45
     static let distanceToleranceMeters: Double = 0.18
     static let azimuthCaptureTolerance: Double = 4.5
+    /// Practical CoreMotion energy threshold for “phone stable enough to shoot.”
+    static let phoneStableMotionThreshold: Double = 1.35
 }
 
 struct QualityWarning: Identifiable, Equatable {
@@ -224,7 +226,9 @@ struct QualityWarning: Identifiable, Equatable {
     }
 }
 
-/// Phase 2 extension point: capture → upload → permanent arUrl → QR → native remote AR.
+/// Phase extension notes (capture → upload → AR unchanged; Phase 3 changes azimuth semantics).
 enum FutureArchitecture {
-    static let note = "Phase 2: photographic AR Object → upload → permanent arUrl → QR → native iOS remote viewer (arfood://)."
+    static let note = """
+    Phase 3: phone stays roughly fixed; object rotates on a turntable. Captured azimuth = object orientation (ManualRotationProvider ± Vision assist), never phone yaw. MotorizedRotationProvider is a stub only. Phase 2 remote pipeline unchanged: photographic AR Object → upload → permanent arUrl → QR → native iOS remote viewer (arfood://).
+    """
 }

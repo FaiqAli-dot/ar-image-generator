@@ -84,7 +84,7 @@ enum ImageProcessingPipeline {
         let far = frames.filter { ($0.distance ?? CaptureConstants.recommendedDistanceMeters) > CaptureConstants.recommendedDistanceMeters + CaptureConstants.distanceToleranceMeters }.count
         let near = frames.filter { ($0.distance ?? CaptureConstants.recommendedDistanceMeters) < CaptureConstants.recommendedDistanceMeters - CaptureConstants.distanceToleranceMeters }.count
         if far + near > frames.count / 3 {
-            warnings.append(QualityWarning(message: "Camera distance drifted often — keep a steadier orbit next time."))
+            warnings.append(QualityWarning(message: "Camera distance drifted often — keep the phone steadier next time."))
         }
         return warnings
     }

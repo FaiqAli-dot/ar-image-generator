@@ -42,6 +42,7 @@
 		E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB0CA9426CE4296AAC22571 /* AppTheme.swift */; };
 		EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */ = {isa = PBXBuildFile; fileRef = 85F27F1B5EF043A89C731BF3 /* DemoBurger */; };
 		FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */; };
+		B4C8D02F5E3E42B9AF7D2E61 /* ObjectRotationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B7C91E4F2D41A89E6C1D50 /* ObjectRotationProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 		7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInstructionsView.swift; sourceTree = "<group>"; };
 		7F917D7DC5ED436E81D265D8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionCaptureGuide.swift; sourceTree = "<group>"; };
+		A3B7C91E4F2D41A89E6C1D50 /* ObjectRotationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectRotationProvider.swift; sourceTree = "<group>"; };
 		85F27F1B5EF043A89C731BF3 /* DemoBurger */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DemoBurger; path = Resources/DemoBurger; sourceTree = "<group>"; };
 		989362B04D3F4BE295E36A7B /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
 		AACFC7B78C784753AB7B4931 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
@@ -185,6 +187,7 @@
 				3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */,
 				F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */,
 				82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */,
+				A3B7C91E4F2D41A89E6C1D50 /* ObjectRotationProvider.swift */,
 				C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */,
 				4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */,
 				989362B04D3F4BE295E36A7B /* APIConfig.swift */,
@@ -310,6 +313,7 @@
 				CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */,
 				0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */,
 				5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */,
+				B4C8D02F5E3E42B9AF7D2E61 /* ObjectRotationProvider.swift in Sources */,
 				1DF6F65375EC48A59DCB49E1 /* ObjectExporter.swift in Sources */,
 				7C370B0F94C046B8A5BE3A6F /* ObjectLibraryStore.swift in Sources */,
 				E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */,
