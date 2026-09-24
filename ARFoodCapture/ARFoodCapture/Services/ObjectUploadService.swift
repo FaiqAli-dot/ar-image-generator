@@ -40,7 +40,7 @@ final class ObjectUploadService: ObservableObject {
 
     @Published private(set) var progress: Double = 0
     @Published private(set) var stage: String = ""
-    private var currentTask: Task<UploadObjectResponse, Error>?
+    private var currentTask: Task<Data, Error>?
 
     private let client = APIClient.shared
 

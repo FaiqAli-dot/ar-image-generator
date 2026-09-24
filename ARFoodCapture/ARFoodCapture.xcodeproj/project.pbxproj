@@ -1,86 +1,87 @@
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
-	classes = {};
+	classes = {
+	};
 	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */; };
-		77A0520BC3144958AEF51F2E /* PhotographicViewSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */; };
-		926207BD7B78459FAAF4BAA0 /* ARFoodCaptureApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */; };
-		19E6B361384E4E57BD8C2ECB /* CaptureInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */; };
+		0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */; };
 		096B0C15206F43119032AC7B /* GuidedCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */; };
+		1354E08F46E148CCB72D1893 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07DE0364CB04BF7A4CE4BB4 /* APIClient.swift */; };
+		14E59160A2CA4511A6DD66B6 /* NetworkingModelFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62637ACCEFA94DC2B4B4238B /* NetworkingModelFixtures.swift */; };
+		159A952D36164E7D9AFDE0D3 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACFC7B78C784753AB7B4931 /* Photos.framework */; };
+		19E6B361384E4E57BD8C2ECB /* CaptureInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */; };
+		1DF6F65375EC48A59DCB49E1 /* ObjectExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */; };
+		26FDC2745EA04C088A202BE4 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11B1394066E1484B9FEA6A32 /* Vision.framework */; };
+		29FB1872168740A1AB384B45 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C33EC4F28D4AC9942FF755 /* ARKit.framework */; };
+		473F2D33B01C4091B5EC2FFB /* ObjectUploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27615A1012EF440EACD03CB2 /* ObjectUploadService.swift */; };
+		5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */; };
+		5A3E50DDE52E43F99CBAF941 /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A625852C4B4B0E95F68156 /* QRCodeGenerator.swift */; };
 		63B3CA78180E4C3CAF7BFFEE /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */; };
-		8BD98750E225447EAED6615D /* CaptureDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */; };
-		AEB2515370B34D9AB8F55885 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F917D7DC5ED436E81D265D8 /* HomeView.swift */; };
-		868A95DE1FD44E4793614056 /* MyObjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */; };
-		9CAAFB6063E8489AAC1E514A /* FoodObjectModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */; };
 		6402254CB0014EA48A1B24C0 /* BackgroundRemovalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */; };
+		757B0199B3CF467DAE2CDA4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02B4203942C143E8BC1A950C /* Assets.xcassets */; };
+		77A0520BC3144958AEF51F2E /* PhotographicViewSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */; };
+		7C370B0F94C046B8A5BE3A6F /* ObjectLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */; };
+		7CD105E9A5D342F098383CBA /* RemoteObjectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90491B597C4441BA61C91FF /* RemoteObjectService.swift */; };
+		868A95DE1FD44E4793614056 /* MyObjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */; };
+		8BD98750E225447EAED6615D /* CaptureDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */; };
+		926207BD7B78459FAAF4BAA0 /* ARFoodCaptureApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */; };
+		99058210BDEE45449B869606 /* UploadObjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443BC6BE420C479387B55F29 /* UploadObjectView.swift */; };
+		9CAAFB6063E8489AAC1E514A /* FoodObjectModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */; };
+		A00F1AFC3E114A0FBC9A93DF /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989362B04D3F4BE295E36A7B /* APIConfig.swift */; };
+		A100016027C44F0BBF873F33 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 608D83C98EB54995A2416042 /* AVFoundation.framework */; };
+		AE5562A505A340B6B5A30E35 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 336C66311C9A4A55927C1559 /* CoreMotion.framework */; };
+		AEB2515370B34D9AB8F55885 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F917D7DC5ED436E81D265D8 /* HomeView.swift */; };
+		B7715C01EAC34B75846AC99D /* ObjectSyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5448A64CE8456DA2DF6626 /* ObjectSyncState.swift */; };
+		BB15A17867E347FABF361BD0 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */; };
 		BEC915B427364626B44E60EC /* CameraCaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */; };
 		CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */; };
-		0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */; };
-		5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */; };
-		1DF6F65375EC48A59DCB49E1 /* ObjectExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */; };
-		7C370B0F94C046B8A5BE3A6F /* ObjectLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */; };
-		E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB0CA9426CE4296AAC22571 /* AppTheme.swift */; };
-		757B0199B3CF467DAE2CDA4A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02B4203942C143E8BC1A950C /* Assets.xcassets */; };
-		EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */ = {isa = PBXBuildFile; fileRef = 85F27F1B5EF043A89C731BF3 /* DemoBurger */; };
-		29FB1872168740A1AB384B45 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C33EC4F28D4AC9942FF755 /* ARKit.framework */; };
-		BB15A17867E347FABF361BD0 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */; };
-		A100016027C44F0BBF873F33 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 608D83C98EB54995A2416042 /* AVFoundation.framework */; };
-		26FDC2745EA04C088A202BE4 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11B1394066E1484B9FEA6A32 /* Vision.framework */; };
-		AE5562A505A340B6B5A30E35 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 336C66311C9A4A55927C1559 /* CoreMotion.framework */; };
-		159A952D36164E7D9AFDE0D3 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACFC7B78C784753AB7B4931 /* Photos.framework */; };
-		B7715C01EAC34B75846AC99D /* ObjectSyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5448A64CE8456DA2DF6626 /* ObjectSyncState.swift */; };
-		A00F1AFC3E114A0FBC9A93DF /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989362B04D3F4BE295E36A7B /* APIConfig.swift */; };
-		1354E08F46E148CCB72D1893 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07DE0364CB04BF7A4CE4BB4 /* APIClient.swift */; };
-		473F2D33B01C4091B5EC2FFB /* ObjectUploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27615A1012EF440EACD03CB2 /* ObjectUploadService.swift */; };
-		7CD105E9A5D342F098383CBA /* RemoteObjectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90491B597C4441BA61C91FF /* RemoteObjectService.swift */; };
 		CDC62300BDA04A6993EC0B87 /* PhotographicImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD154EA3443401595DA06DC /* PhotographicImageProvider.swift */; };
-		5A3E50DDE52E43F99CBAF941 /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A625852C4B4B0E95F68156 /* QRCodeGenerator.swift */; };
-		99058210BDEE45449B869606 /* UploadObjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443BC6BE420C479387B55F29 /* UploadObjectView.swift */; };
-		14E59160A2CA4511A6DD66B6 /* NetworkingModelFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62637ACCEFA94DC2B4B4238B /* NetworkingModelFixtures.swift */; };
+		E0E4FA2D9D4547568D9E93CA /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB0CA9426CE4296AAC22571 /* AppTheme.swift */; };
+		EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */ = {isa = PBXBuildFile; fileRef = 85F27F1B5EF043A89C731BF3 /* DemoBurger */; };
+		FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		774916E821A84FF8B07EA151 /* ARFoodCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ARFoodCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicARView.swift; sourceTree = "<group>"; };
-		BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicViewSelector.swift; sourceTree = "<group>"; };
-		39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARFoodCaptureApp.swift; sourceTree = "<group>"; };
-		7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInstructionsView.swift; sourceTree = "<group>"; };
-		63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureView.swift; sourceTree = "<group>"; };
-		E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
-		E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureDebugView.swift; sourceTree = "<group>"; };
-		7F917D7DC5ED436E81D265D8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyObjectsView.swift; sourceTree = "<group>"; };
-		34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodObjectModels.swift; sourceTree = "<group>"; };
-		F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRemovalService.swift; sourceTree = "<group>"; };
-		47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureController.swift; sourceTree = "<group>"; };
-		3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureSession.swift; sourceTree = "<group>"; };
-		F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingPipeline.swift; sourceTree = "<group>"; };
-		82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionCaptureGuide.swift; sourceTree = "<group>"; };
-		C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectExporter.swift; sourceTree = "<group>"; };
-		4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectLibraryStore.swift; sourceTree = "<group>"; };
-		5BB0CA9426CE4296AAC22571 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		02B4203942C143E8BC1A950C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		85F27F1B5EF043A89C731BF3 /* DemoBurger */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DemoBurger; path = Resources/DemoBurger; sourceTree = "<group>"; };
-		10E11BD84CE743C690D0B716 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		52C33EC4F28D4AC9942FF755 /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ARKit.framework; path = System/Library/Frameworks/ARKit.framework; sourceTree = SDKROOT; };
-		C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
-		608D83C98EB54995A2416042 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		11B1394066E1484B9FEA6A32 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
-		336C66311C9A4A55927C1559 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
-		AACFC7B78C784753AB7B4931 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		0B5448A64CE8456DA2DF6626 /* ObjectSyncState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectSyncState.swift; sourceTree = "<group>"; };
-		989362B04D3F4BE295E36A7B /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
-		D07DE0364CB04BF7A4CE4BB4 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
-		27615A1012EF440EACD03CB2 /* ObjectUploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectUploadService.swift; sourceTree = "<group>"; };
-		C90491B597C4441BA61C91FF /* RemoteObjectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteObjectService.swift; sourceTree = "<group>"; };
 		0BD154EA3443401595DA06DC /* PhotographicImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicImageProvider.swift; sourceTree = "<group>"; };
+		10E11BD84CE743C690D0B716 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		11B1394066E1484B9FEA6A32 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
 		16A625852C4B4B0E95F68156 /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
+		27615A1012EF440EACD03CB2 /* ObjectUploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectUploadService.swift; sourceTree = "<group>"; };
+		336C66311C9A4A55927C1559 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
+		3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureSession.swift; sourceTree = "<group>"; };
+		34E4D25A52F548E7B54AE7B4 /* FoodObjectModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodObjectModels.swift; sourceTree = "<group>"; };
+		39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARFoodCaptureApp.swift; sourceTree = "<group>"; };
 		443BC6BE420C479387B55F29 /* UploadObjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadObjectView.swift; sourceTree = "<group>"; };
+		4551B71DABEF4391A1D1C1DD /* ObjectLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectLibraryStore.swift; sourceTree = "<group>"; };
+		47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureController.swift; sourceTree = "<group>"; };
+		52C33EC4F28D4AC9942FF755 /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ARKit.framework; path = System/Library/Frameworks/ARKit.framework; sourceTree = SDKROOT; };
+		5BB0CA9426CE4296AAC22571 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyObjectsView.swift; sourceTree = "<group>"; };
+		608D83C98EB54995A2416042 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		62637ACCEFA94DC2B4B4238B /* NetworkingModelFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingModelFixtures.swift; sourceTree = "<group>"; };
+		63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedCaptureView.swift; sourceTree = "<group>"; };
+		6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicARView.swift; sourceTree = "<group>"; };
+		774916E821A84FF8B07EA151 /* ARFoodCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ARFoodCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInstructionsView.swift; sourceTree = "<group>"; };
+		7F917D7DC5ED436E81D265D8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionCaptureGuide.swift; sourceTree = "<group>"; };
+		85F27F1B5EF043A89C731BF3 /* DemoBurger */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DemoBurger; path = Resources/DemoBurger; sourceTree = "<group>"; };
+		989362B04D3F4BE295E36A7B /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
+		AACFC7B78C784753AB7B4931 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+		BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotographicViewSelector.swift; sourceTree = "<group>"; };
+		C2C7DACCBFB84680861E4DC1 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
+		C88BE198A9374BDFA8810E72 /* ObjectExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectExporter.swift; sourceTree = "<group>"; };
+		C90491B597C4441BA61C91FF /* RemoteObjectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteObjectService.swift; sourceTree = "<group>"; };
+		D07DE0364CB04BF7A4CE4BB4 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureDebugView.swift; sourceTree = "<group>"; };
+		E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
+		F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingPipeline.swift; sourceTree = "<group>"; };
+		F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRemovalService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,21 +101,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		7E4AB3229844449687B4EFB7 = {
+		081F8E769EB145B3B24BCF31 /* Library */ = {
 			isa = PBXGroup;
 			children = (
-				D552E89345844D6EB18AAD81 /* ARFoodCapture */,
-				09E1655A04B94B42A0DE5D6F /* Frameworks */,
-				ECC4173AC533452583C71FB3 /* Products */,
+				7F917D7DC5ED436E81D265D8 /* HomeView.swift */,
+				5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */,
+				443BC6BE420C479387B55F29 /* UploadObjectView.swift */,
 			);
-			sourceTree = "<group>";
-		};
-		ECC4173AC533452583C71FB3 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				774916E821A84FF8B07EA151 /* ARFoodCapture.app */,
-			);
-			name = Products;
+			path = Library;
 			sourceTree = "<group>";
 		};
 		09E1655A04B94B42A0DE5D6F /* Frameworks */ = {
@@ -130,31 +124,12 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		D552E89345844D6EB18AAD81 /* ARFoodCapture */ = {
+		5296C31742294B03803D7BB5 /* Debug */ = {
 			isa = PBXGroup;
 			children = (
-				8DC79C5EC0A442EEAD1B4D7F /* AR */,
-				558F484DC4374180B5357414 /* Capture */,
-				5296C31742294B03803D7BB5 /* Debug */,
-				081F8E769EB145B3B24BCF31 /* Library */,
-				81BA7E11A326445E8D213ADE /* Models */,
-				A06C6045217F4070A36C9BF9 /* Services */,
-				8AFCD7254AA34B129759A7F6 /* Theme */,
-				39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */,
-				02B4203942C143E8BC1A950C /* Assets.xcassets */,
-				85F27F1B5EF043A89C731BF3 /* DemoBurger */,
-				10E11BD84CE743C690D0B716 /* Info.plist */,
+				E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */,
 			);
-			path = ARFoodCapture;
-			sourceTree = "<group>";
-		};
-		8DC79C5EC0A442EEAD1B4D7F /* AR */ = {
-			isa = PBXGroup;
-			children = (
-				6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */,
-				BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */,
-			);
-			path = AR;
+			path = Debug;
 			sourceTree = "<group>";
 		};
 		558F484DC4374180B5357414 /* Capture */ = {
@@ -167,22 +142,13 @@
 			path = Capture;
 			sourceTree = "<group>";
 		};
-		5296C31742294B03803D7BB5 /* Debug */ = {
+		7E4AB3229844449687B4EFB7 = {
 			isa = PBXGroup;
 			children = (
-				E1145E0D658E463496DA8CC0 /* CaptureDebugView.swift */,
+				D552E89345844D6EB18AAD81 /* ARFoodCapture */,
+				09E1655A04B94B42A0DE5D6F /* Frameworks */,
+				ECC4173AC533452583C71FB3 /* Products */,
 			);
-			path = Debug;
-			sourceTree = "<group>";
-		};
-		081F8E769EB145B3B24BCF31 /* Library */ = {
-			isa = PBXGroup;
-			children = (
-				7F917D7DC5ED436E81D265D8 /* HomeView.swift */,
-				5D31AE94BB254E4A84C1476D /* MyObjectsView.swift */,
-				443BC6BE420C479387B55F29 /* UploadObjectView.swift */,
-			);
-			path = Library;
 			sourceTree = "<group>";
 		};
 		81BA7E11A326445E8D213ADE /* Models */ = {
@@ -192,6 +158,23 @@
 				0B5448A64CE8456DA2DF6626 /* ObjectSyncState.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		8AFCD7254AA34B129759A7F6 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				5BB0CA9426CE4296AAC22571 /* AppTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		8DC79C5EC0A442EEAD1B4D7F /* AR */ = {
+			isa = PBXGroup;
+			children = (
+				6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */,
+				BC98DDC6CF2B451B9A32CA5E /* PhotographicViewSelector.swift */,
+			);
+			path = AR;
 			sourceTree = "<group>";
 		};
 		A06C6045217F4070A36C9BF9 /* Services */ = {
@@ -215,12 +198,30 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-		8AFCD7254AA34B129759A7F6 /* Theme */ = {
+		D552E89345844D6EB18AAD81 /* ARFoodCapture */ = {
 			isa = PBXGroup;
 			children = (
-				5BB0CA9426CE4296AAC22571 /* AppTheme.swift */,
+				8DC79C5EC0A442EEAD1B4D7F /* AR */,
+				558F484DC4374180B5357414 /* Capture */,
+				5296C31742294B03803D7BB5 /* Debug */,
+				081F8E769EB145B3B24BCF31 /* Library */,
+				81BA7E11A326445E8D213ADE /* Models */,
+				A06C6045217F4070A36C9BF9 /* Services */,
+				8AFCD7254AA34B129759A7F6 /* Theme */,
+				39DC0B37A29E40FFB098C920 /* ARFoodCaptureApp.swift */,
+				02B4203942C143E8BC1A950C /* Assets.xcassets */,
+				85F27F1B5EF043A89C731BF3 /* DemoBurger */,
+				10E11BD84CE743C690D0B716 /* Info.plist */,
 			);
-			path = Theme;
+			path = ARFoodCapture;
+			sourceTree = "<group>";
+		};
+		ECC4173AC533452583C71FB3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				774916E821A84FF8B07EA151 /* ARFoodCapture.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -255,6 +256,7 @@
 				TargetAttributes = {
 					C97358F1E1914269B60998FE = {
 						CreatedOnToolsVersion = 15.0;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -326,27 +328,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		140C6EC606144A8790704A76 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_TESTABILITY = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				ONLY_ACTIVE_ARCH = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				SDKROOT = iphoneos;
-			};
-			name = Debug;
-		};
 		0EA69F595757483296754277 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -356,13 +337,34 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SWIFT_COMPILATION_MODE = wholemodule;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
+		};
+		140C6EC606144A8790704A76 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
 		};
 		E6800B76B74A4C81BDA61D2F /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -371,7 +373,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = UMGKT8A5ZB;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ARFoodCapture/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "AR Food";
@@ -382,7 +384,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arfood.capture;
+				PRODUCT_BUNDLE_IDENTIFIER = com.faigalee.arfood.capture;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -400,7 +402,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = UMGKT8A5ZB;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ARFoodCapture/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "AR Food";
@@ -411,7 +413,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.arfood.capture;
+				PRODUCT_BUNDLE_IDENTIFIER = com.faigalee.arfood.capture;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -425,20 +427,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		40AAA5A8BD1C4E9CA102E8C8 /* Build configuration list for PBXProject "ARFoodCapture" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				140C6EC606144A8790704A76 /* Debug */,
-				0EA69F595757483296754277 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		0E683DA01BF745DCA4D4AC87 /* Build configuration list for PBXNativeTarget "ARFoodCapture" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E6800B76B74A4C81BDA61D2F /* Debug */,
 				F9455E96AE2B4FB798200097 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		40AAA5A8BD1C4E9CA102E8C8 /* Build configuration list for PBXProject "ARFoodCapture" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				140C6EC606144A8790704A76 /* Debug */,
+				0EA69F595757483296754277 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

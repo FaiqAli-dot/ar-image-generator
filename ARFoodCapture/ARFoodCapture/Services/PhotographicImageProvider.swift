@@ -7,6 +7,7 @@ protocol PhotographicImageProviding: AnyObject {
 }
 
 /// Loads transparent views from ObjectLibraryStore (local Application Support).
+@MainActor
 final class LocalPhotographicImageProvider: PhotographicImageProviding {
     let object: FoodObject
     let store: ObjectLibraryStore

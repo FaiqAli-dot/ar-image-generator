@@ -50,8 +50,8 @@ enum ImageProcessingPipeline {
         }
 
         await onProgress(ProcessingProgress(processed: total, total: total, stage: "Building thumbnail…"))
-        let thumbSource = frames.first.flatMap { images[String(format: "view_%03d.png", 0)] }.flatMap { UIImage(data: $0) }
-            ?? frames.first?.image
+        let firstKey = String(format: "view_%03d.png", 0)
+        let thumbSource = images[firstKey].flatMap { UIImage(data: $0) } ?? frames.first?.image
         let thumbnail = makeThumbnail(thumbSource)
         let thumbData = thumbnail?.pngData() ?? Data()
 

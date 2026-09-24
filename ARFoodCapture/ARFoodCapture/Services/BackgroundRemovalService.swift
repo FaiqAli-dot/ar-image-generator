@@ -38,7 +38,7 @@ actor BackgroundRemovalService {
             throw BackgroundRemovalError.noMask
         }
         let maskPixelBuffer = try result.generateScaledMaskForImage(
-            for: result.allInstances,
+            forInstances: result.allInstances,
             from: handler
         )
         return try apply(mask: maskPixelBuffer, to: cgImage)

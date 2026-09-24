@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 enum ObjectExporter {
     /// Builds a shareable package: object.json + images/ + thumbnail/
+    @MainActor
     static func makeSharePackage(for object: FoodObject, store: ObjectLibraryStore) throws -> URL {
         let fm = FileManager.default
         let tempRoot = fm.temporaryDirectory.appendingPathComponent("export-\(object.id)-\(UUID().uuidString)", isDirectory: true)

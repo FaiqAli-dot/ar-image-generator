@@ -196,7 +196,7 @@ struct PhotographicARViewContainer: UIViewRepresentable {
         func attach(arView: ARView) {
             self.arView = arView
             arView.session.delegate = self
-            let tap = UITapGestureRecognizer(target: self, selector: #selector(handleTap(_:)))
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
             arView.addGestureRecognizer(tap)
             addPlacementIndicator(to: arView)
 
@@ -317,7 +317,7 @@ struct PhotographicARViewContainer: UIViewRepresentable {
             if let view = selector.selectedView, view.image != lastTextureName,
                let tex = selector.texture(named: view.image) {
                 var mat = UnlitMaterial()
-                mat.blending = .transparent(opacity: 1.0)
+                mat.blending = .transparent(opacity: .init(scale: 1.0))
                 mat.color = .init(texture: .init(tex))
                 billboard.model?.materials = [mat]
                 lastTextureName = view.image
@@ -328,7 +328,7 @@ struct PhotographicARViewContainer: UIViewRepresentable {
                    let tex = selector.texture(named: neighbor.image) {
                     var mat = UnlitMaterial()
                     let opacity = selector.blendFactor
-                    mat.blending = .transparent(opacity: opacity)
+                    mat.blending = .transparent(opacity: .init(scale: opacity))
                     mat.color = .init(tint: UIColor.white.withAlphaComponent(CGFloat(opacity)), texture: .init(tex))
                     blend.model?.materials = [mat]
                     blend.isEnabled = selector.blendFactor > 0.02
