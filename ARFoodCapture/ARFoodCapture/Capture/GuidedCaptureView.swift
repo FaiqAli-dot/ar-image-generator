@@ -10,8 +10,11 @@ struct GuidedCaptureView: View {
     @State private var showPassIntro = true
     @State private var showElevatedIntro = false
     @State private var showComplete = false
-    @State private var showWarnings = false
     @State private var warnings: [QualityWarning] = []
+
+    private var showLiveGuides: Bool {
+        session.isAutoArmed && !showPassIntro && !showElevatedIntro && !showComplete
+    }
 
     var body: some View {
         ZStack {
@@ -22,7 +25,24 @@ struct GuidedCaptureView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            VStack(spacing: 16) {
+            if showLiveGuides {
+                AlignmentFrameOverlay(
+                    color: alignmentBorderColor,
+                    pulse: session.isCaptureAligned
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+                DirectionalGuidanceOverlay(
+                    orbit: session.orbitGuidance,
+                    elevation: session.elevationGuidance,
+                    tint: alignmentBorderColor,
+                    label: session.nextTargetDirectionHint
+                )
+                .allowsHitTesting(false)
+            }
+
+            VStack(spacing: 12) {
                 HStack {
                     Button {
                         session.teardown()
@@ -50,28 +70,52 @@ struct GuidedCaptureView: View {
 
                 CircularCaptureGuide(
                     capturedSlots: session.capturedSlotsForCurrentPass,
+                    nextTargetSlot: session.nextTargetSlot,
                     currentAzimuth: session.motion.azimuthDegrees,
                     targetElevation: session.pass.targetElevationDegrees,
                     currentElevation: session.motion.elevationDegrees
                 )
                 .frame(width: 220, height: 220)
-                .padding(.top, 8)
+                .padding(.top, 4)
+
+                ringLegend
+                    .padding(.top, 2)
 
                 Text(session.motion.distanceStatus().message)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(session.motion.distanceStatus() == .good ? Color.green.opacity(0.9) : AppTheme.accent)
 
-                Text("Recommended ~\(Int(CaptureConstants.recommendedDistanceMeters * 100)) cm")
+                Text("Stand ~\(Int(CaptureConstants.recommendedDistanceMeters * 100)) cm away · keep food centered")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.45))
 
                 Text(session.lastMessage)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
+                    .padding(.top, 2)
+
+                Text("Photos capture automatically — no shutter")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.5))
 
                 Spacer()
+
+                if showLiveGuides {
+                    Button("CAPTURE NOW") {
+                        session.captureNearestManually()
+                    }
+                    .buttonStyle(PrimaryButtonStyle(filled: false))
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 4)
+                    Text("Use if a tick won’t fill while you hold that angle")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 6)
+                }
 
                 if session.camera.lockedSettings {
                     Text("AE / WB / FOCUS LOCKED")
@@ -83,8 +127,9 @@ struct GuidedCaptureView: View {
 
             if showPassIntro {
                 passOverlay(
-                    title: "PASS 1 OF 2",
-                    message: "Capture from around the sides.",
+                    title: "PASS 1 OF 2 — SIDES",
+                    bullets: CapturePass.horizontal.introBullets,
+                    footer: "No shutter. Move slowly until every tick lights up.",
                     button: "START"
                 ) {
                     showPassIntro = false
@@ -94,8 +139,9 @@ struct GuidedCaptureView: View {
 
             if showElevatedIntro {
                 passOverlay(
-                    title: "SIDE VIEW COMPLETE",
-                    message: "Raise phone slightly. Capture from above.",
+                    title: "PASS 2 OF 2 — SLIGHTLY ABOVE",
+                    bullets: CapturePass.elevated.introBullets,
+                    footer: "Same slow orbit. Photos still auto-capture.",
                     button: "START TOP PASS"
                 ) {
                     showElevatedIntro = false
@@ -106,7 +152,10 @@ struct GuidedCaptureView: View {
             if showComplete {
                 passOverlay(
                     title: "72 / 72 CAPTURE COMPLETE",
-                    message: warnings.isEmpty ? "Ready to process photographic views." : "Review quality notes, then process.",
+                    bullets: warnings.isEmpty
+                        ? ["Ready to process photographic views."]
+                        : warnings.map(\.message),
+                    footer: warnings.isEmpty ? nil : "You can still process — review notes above.",
                     button: "PROCESS OBJECT"
                 ) {
                     CaptureDraftStore.shared.frames = session.frames
@@ -136,28 +185,99 @@ struct GuidedCaptureView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func passOverlay(title: String, message: String, button: String, action: @escaping () -> Void) -> some View {
+    /// Soft red → orange → yellow → lime → green based on alignment score.
+    private var alignmentBorderColor: Color {
+        if session.isCaptureAligned {
+            return Color(red: 0.25, green: 0.88, blue: 0.42)
+        }
+        let t = max(0, min(1, session.alignmentScore))
+        let stops: [(Double, (Double, Double, Double))] = [
+            (0.00, (0.92, 0.22, 0.22)), // red
+            (0.28, (0.95, 0.48, 0.18)), // orange
+            (0.55, (0.95, 0.82, 0.22)), // yellow
+            (0.78, (0.72, 0.92, 0.28)), // lime
+            (1.00, (0.25, 0.88, 0.42))  // green
+        ]
+        for i in 0..<(stops.count - 1) {
+            let a = stops[i]
+            let b = stops[i + 1]
+            if t <= b.0 {
+                let local = (t - a.0) / (b.0 - a.0)
+                let r = a.1.0 + (b.1.0 - a.1.0) * local
+                let g = a.1.1 + (b.1.1 - a.1.1) * local
+                let bl = a.1.2 + (b.1.2 - a.1.2) * local
+                return Color(red: r, green: g, blue: bl)
+            }
+        }
+        return Color(red: 0.25, green: 0.88, blue: 0.42)
+    }
+
+    private var ringLegend: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 14) {
+                legendItem(color: AppTheme.accent, label: "Filled = captured")
+                legendItem(color: .white, label: "Needle = you")
+            }
+            Text("Walk until all ticks light up · bright tick = next target")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
+            Text("Frame color: red = off · green = ready to capture")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+    }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+            Text(label)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+    }
+
+    private func passOverlay(
+        title: String,
+        bullets: [String],
+        footer: String?,
+        button: String,
+        action: @escaping () -> Void
+    ) -> some View {
         ZStack {
             Color.black.opacity(0.72).ignoresSafeArea()
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
                 Text(title)
                     .font(.system(size: 22, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
-                Text(message)
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                if showComplete && !warnings.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(warnings) { w in
-                            Text("• \(w.message)")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(bullets.enumerated()), id: \.offset) { index, line in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(index + 1).")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundStyle(AppTheme.accent)
+                                .frame(width: 22, alignment: .leading)
+                            Text(line)
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.horizontal)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 8)
+
+                if let footer {
+                    Text(footer)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 2)
+                }
+
                 Button(button, action: action)
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, 28)
@@ -168,18 +288,90 @@ struct GuidedCaptureView: View {
     }
 }
 
-extension GuidedCaptureSession {
-    var capturedSlotsForCurrentPass: Set<Int> {
-        let offset = pass.rawValue * 100
-        return Set(capturedSlots.compactMap { slot in
-            let v = slot - offset
-            return (0..<36).contains(v) ? v : nil
-        })
+/// Near-full-screen colored frame reflecting capture alignment.
+struct AlignmentFrameOverlay: View {
+    let color: Color
+    var pulse: Bool = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let inset: CGFloat = 10
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(color.opacity(pulse ? 0.95 : 0.72), lineWidth: pulse ? 8 : 6)
+                .shadow(color: color.opacity(0.45), radius: pulse ? 14 : 8)
+                .padding(inset)
+                .frame(width: geo.size.width, height: geo.size.height)
+                .animation(.easeInOut(duration: 0.22), value: color.description)
+        }
+    }
+}
+
+/// Edge arrows so the food center stays clear.
+struct DirectionalGuidanceOverlay: View {
+    let orbit: CaptureOrbitGuidance
+    let elevation: CaptureElevationGuidance
+    let tint: Color
+    let label: String?
+
+    var body: some View {
+        ZStack {
+            if orbit == .left {
+                guidanceChevron(systemName: "chevron.left.circle.fill", label: "LEFT")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .padding(.leading, 14)
+            }
+            if orbit == .right {
+                guidanceChevron(systemName: "chevron.right.circle.fill", label: "RIGHT")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                    .padding(.trailing, 14)
+            }
+            if elevation == .raise {
+                guidanceChevron(systemName: "chevron.up.circle.fill", label: "RAISE")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 110)
+            }
+            if elevation == .lower {
+                guidanceChevron(systemName: "chevron.down.circle.fill", label: "LOWER")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 150)
+            }
+
+            if let label, orbit != .hold || elevation != .hold {
+                VStack {
+                    Spacer()
+                    Text(label)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.black.opacity(0.45), in: Capsule())
+                        .overlay(Capsule().stroke(tint.opacity(0.7), lineWidth: 1.2))
+                        .padding(.bottom, 210)
+                }
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: orbit)
+        .animation(.easeOut(duration: 0.2), value: elevation)
+    }
+
+    private func guidanceChevron(systemName: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 46, weight: .semibold))
+                .foregroundStyle(tint.opacity(0.95))
+                .shadow(color: .black.opacity(0.55), radius: 6, y: 2)
+            Text(label)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .tracking(1)
+                .foregroundStyle(.white.opacity(0.9))
+                .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
+        }
     }
 }
 
 struct CircularCaptureGuide: View {
     let capturedSlots: Set<Int>
+    var nextTargetSlot: Int? = nil
     let currentAzimuth: Double
     let targetElevation: Double
     let currentElevation: Double
@@ -199,10 +391,22 @@ struct CircularCaptureGuide: View {
                         x: center.x + CGFloat(cos(rad)) * radius,
                         y: center.y + CGFloat(sin(rad)) * radius
                     )
-                    Circle()
-                        .fill(capturedSlots.contains(i) ? AppTheme.accent : Color.white.opacity(0.25))
-                        .frame(width: capturedSlots.contains(i) ? 10 : 7, height: capturedSlots.contains(i) ? 10 : 7)
-                        .position(pt)
+                    let isCaptured = capturedSlots.contains(i)
+                    let isNext = nextTargetSlot == i && !isCaptured
+                    ZStack {
+                        if isNext {
+                            Circle()
+                                .stroke(AppTheme.accent, lineWidth: 2)
+                                .frame(width: 16, height: 16)
+                        }
+                        Circle()
+                            .fill(isCaptured ? AppTheme.accent : (isNext ? Color.white : Color.white.opacity(0.25)))
+                            .frame(
+                                width: isCaptured || isNext ? 10 : 7,
+                                height: isCaptured || isNext ? 10 : 7
+                            )
+                    }
+                    .position(pt)
                 }
                 // Camera needle
                 let camAngle = (currentAzimuth - 90) * .pi / 180
