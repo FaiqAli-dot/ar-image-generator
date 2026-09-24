@@ -51,7 +51,8 @@ There is **no shutter**. The app auto-captures ~72 photos from device motion as 
 2. **Pass 1 (sides):** hold the phone upright at food height; walk a slow full circle. Ring ticks fill automatically.
 3. **Pass 2 (slightly above):** raise the phone, tilt slightly down, walk the same circle again.
 4. White needle = your angle; filled ticks = captured; bright tick = next target. Move slowly until all ticks light up.
-5. If a tick won’t fill while you hold that angle, use **Capture now** as a manual fallback for the nearest slot.
+5. **Frame color** goes red → orange → yellow → green as you align (azimuth + height). Edge arrows show orbit left/right and raise/lower.
+6. If a tick won’t fill while you hold that angle, use **Capture now** as a manual fallback for the nearest slot.
 
 Elevation coaching (“Lower the phone to table height” / “Raise phone and look slightly down”) means the phone pitch is outside the soft band for the current pass — adjust height/tilt, then keep walking.
 

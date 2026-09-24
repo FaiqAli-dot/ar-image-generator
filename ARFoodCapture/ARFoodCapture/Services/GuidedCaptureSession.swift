@@ -47,16 +47,98 @@ final class GuidedCaptureSession: ObservableObject {
         return nil
     }
 
-    /// Short arrow hint: which way to turn toward the next empty tick.
-    var nextTargetDirectionHint: String? {
+    /// Signed azimuth delta to the next target (−180…180). Positive = turn right / walk clockwise.
+    var azimuthDeltaToNextTarget: Double? {
         guard let target = nextTargetSlot else { return nil }
         let targetAz = Double(target) * CaptureConstants.azimuthStepDegrees
         var delta = CapturedView.normalizeAzimuth(targetAz - motion.azimuthDegrees)
         if delta > 180 { delta -= 360 }
-        if abs(delta) <= CaptureConstants.azimuthCaptureTolerance {
+        return delta
+    }
+
+    /// Elevation error vs the soft band for the current pass (degrees). Positive = need to raise/tilt down more.
+    var elevationErrorDegrees: Double {
+        let elev = motion.elevationDegrees
+        switch pass {
+        case .horizontal:
+            if elev > 12 { return 12 - elev } // negative → lower
+            if elev < -8 { return -8 - elev } // positive → raise a bit
+            return 0
+        case .elevated:
+            if elev < 8 { return 8 - elev } // positive → raise
+            if elev > 28 { return 28 - elev } // negative → lower
+            let ideal = pass.targetElevationDegrees
+            let soft = elev - ideal
+            if abs(soft) < 6 { return 0 }
+            return -soft
+        }
+    }
+
+    /// 0 = far off (red), 1 = capture-ready (green). Uses azimuth + elevation vs next target.
+    var alignmentScore: Double {
+        guard isAutoArmed, nextTargetSlot != nil else { return 0 }
+        let azErr = abs(azimuthDeltaToNextTarget ?? 180)
+        // Within capture tolerance → full credit; falls to 0 by ~50°.
+        let azScore = max(0, min(1, 1 - (azErr - CaptureConstants.azimuthCaptureTolerance) / 45))
+        let elevScore = elevationAlignmentScore
+        return min(azScore, elevScore)
+    }
+
+    /// True when auto-capture gates for the next target would succeed (azimuth + elevation).
+    var isCaptureAligned: Bool {
+        guard isAutoArmed, let target = nextTargetSlot else { return false }
+        let targetAz = Double(target) * CaptureConstants.azimuthStepDegrees
+        return motion.isAligned(to: targetAz) && elevationBlockMessage() == nil
+    }
+
+    var orbitGuidance: CaptureOrbitGuidance {
+        guard let delta = azimuthDeltaToNextTarget else { return .hold }
+        if abs(delta) <= CaptureConstants.azimuthCaptureTolerance { return .hold }
+        return delta > 0 ? .right : .left
+    }
+
+    var elevationGuidance: CaptureElevationGuidance {
+        let err = elevationErrorDegrees
+        if abs(err) < 1.5 { return .hold }
+        return err > 0 ? .raise : .lower
+    }
+
+    /// Short arrow hint: which way to turn toward the next empty tick.
+    var nextTargetDirectionHint: String? {
+        guard nextTargetSlot != nil else { return nil }
+        if isCaptureAligned {
             return "Hold steady — capturing this angle"
         }
-        return delta > 0 ? "Turn right toward the bright tick →" : "← Turn left toward the bright tick"
+        var parts: [String] = []
+        switch orbitGuidance {
+        case .left: parts.append("Orbit left ←")
+        case .right: parts.append("Orbit right →")
+        case .hold: break
+        }
+        switch elevationGuidance {
+        case .raise: parts.append(pass == .elevated ? "Raise / tilt down" : "Raise slightly")
+        case .lower: parts.append("Lower phone")
+        case .hold: break
+        }
+        if parts.isEmpty { return "Keep food centered" }
+        return parts.joined(separator: " · ")
+    }
+
+    private var elevationAlignmentScore: Double {
+        let elev = motion.elevationDegrees
+        switch pass {
+        case .horizontal:
+            if elev <= 12 && elev >= -8 { return 1 }
+            if elev > 12 { return max(0, 1 - (elev - 12) / 22) }
+            return max(0, 1 - ((-8) - elev) / 22)
+        case .elevated:
+            if elev >= 8 && elev <= 28 {
+                let drift = abs(elev - pass.targetElevationDegrees)
+                return max(0.55, 1 - drift / 30)
+            }
+            if elev < 8 { return max(0, elev / 8) }
+            return max(0, 1 - (elev - 28) / 20)
+        }
     }
 
     func prepare() async {
@@ -138,7 +220,7 @@ final class GuidedCaptureSession: ObservableObject {
             lastMessage = block
             return
         }
-        if let hint = nextTargetDirectionHint, hint.hasPrefix("Hold") {
+        if let hint = nextTargetDirectionHint {
             lastMessage = hint
             return
         }
@@ -190,4 +272,12 @@ final class GuidedCaptureSession: ObservableObject {
         capturedSlots = Set(capturedSlots.filter { $0 >= 100 })
         startPass(.elevated)
     }
+}
+
+enum CaptureOrbitGuidance {
+    case left, right, hold
+}
+
+enum CaptureElevationGuidance {
+    case raise, lower, hold
 }

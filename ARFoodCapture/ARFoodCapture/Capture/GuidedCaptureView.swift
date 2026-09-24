@@ -12,6 +12,10 @@ struct GuidedCaptureView: View {
     @State private var showComplete = false
     @State private var warnings: [QualityWarning] = []
 
+    private var showLiveGuides: Bool {
+        session.isAutoArmed && !showPassIntro && !showElevatedIntro && !showComplete
+    }
+
     var body: some View {
         ZStack {
             CameraPreview(controller: session.camera)
@@ -20,6 +24,23 @@ struct GuidedCaptureView: View {
             LinearGradient(colors: [.black.opacity(0.55), .clear, .black.opacity(0.7)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
+
+            if showLiveGuides {
+                AlignmentFrameOverlay(
+                    color: alignmentBorderColor,
+                    pulse: session.isCaptureAligned
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+                DirectionalGuidanceOverlay(
+                    orbit: session.orbitGuidance,
+                    elevation: session.elevationGuidance,
+                    tint: alignmentBorderColor,
+                    label: session.nextTargetDirectionHint
+                )
+                .allowsHitTesting(false)
+            }
 
             VStack(spacing: 12) {
                 HStack {
@@ -60,14 +81,6 @@ struct GuidedCaptureView: View {
                 ringLegend
                     .padding(.top, 2)
 
-                if let direction = session.nextTargetDirectionHint, session.isAutoArmed {
-                    Text(direction)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(AppTheme.accent.opacity(0.95))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
-
                 Text(session.motion.distanceStatus().message)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(session.motion.distanceStatus() == .good ? Color.green.opacity(0.9) : AppTheme.accent)
@@ -89,7 +102,7 @@ struct GuidedCaptureView: View {
 
                 Spacer()
 
-                if session.isAutoArmed && !showPassIntro && !showElevatedIntro && !showComplete {
+                if showLiveGuides {
                     Button("CAPTURE NOW") {
                         session.captureNearestManually()
                     }
@@ -172,6 +185,33 @@ struct GuidedCaptureView: View {
         .preferredColorScheme(.dark)
     }
 
+    /// Soft red → orange → yellow → lime → green based on alignment score.
+    private var alignmentBorderColor: Color {
+        if session.isCaptureAligned {
+            return Color(red: 0.25, green: 0.88, blue: 0.42)
+        }
+        let t = max(0, min(1, session.alignmentScore))
+        let stops: [(Double, (Double, Double, Double))] = [
+            (0.00, (0.92, 0.22, 0.22)), // red
+            (0.28, (0.95, 0.48, 0.18)), // orange
+            (0.55, (0.95, 0.82, 0.22)), // yellow
+            (0.78, (0.72, 0.92, 0.28)), // lime
+            (1.00, (0.25, 0.88, 0.42))  // green
+        ]
+        for i in 0..<(stops.count - 1) {
+            let a = stops[i]
+            let b = stops[i + 1]
+            if t <= b.0 {
+                let local = (t - a.0) / (b.0 - a.0)
+                let r = a.1.0 + (b.1.0 - a.1.0) * local
+                let g = a.1.1 + (b.1.1 - a.1.1) * local
+                let bl = a.1.2 + (b.1.2 - a.1.2) * local
+                return Color(red: r, green: g, blue: bl)
+            }
+        }
+        return Color(red: 0.25, green: 0.88, blue: 0.42)
+    }
+
     private var ringLegend: some View {
         VStack(spacing: 4) {
             HStack(spacing: 14) {
@@ -181,6 +221,9 @@ struct GuidedCaptureView: View {
             Text("Walk until all ticks light up · bright tick = next target")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.45))
+            Text("Frame color: red = off · green = ready to capture")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
         }
     }
 
@@ -241,6 +284,87 @@ struct GuidedCaptureView: View {
                     .padding(.top, 8)
             }
             .padding(28)
+        }
+    }
+}
+
+/// Near-full-screen colored frame reflecting capture alignment.
+struct AlignmentFrameOverlay: View {
+    let color: Color
+    var pulse: Bool = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let inset: CGFloat = 10
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(color.opacity(pulse ? 0.95 : 0.72), lineWidth: pulse ? 8 : 6)
+                .shadow(color: color.opacity(0.45), radius: pulse ? 14 : 8)
+                .padding(inset)
+                .frame(width: geo.size.width, height: geo.size.height)
+                .animation(.easeInOut(duration: 0.22), value: color.description)
+        }
+    }
+}
+
+/// Edge arrows so the food center stays clear.
+struct DirectionalGuidanceOverlay: View {
+    let orbit: CaptureOrbitGuidance
+    let elevation: CaptureElevationGuidance
+    let tint: Color
+    let label: String?
+
+    var body: some View {
+        ZStack {
+            if orbit == .left {
+                guidanceChevron(systemName: "chevron.left.circle.fill", label: "LEFT")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .padding(.leading, 14)
+            }
+            if orbit == .right {
+                guidanceChevron(systemName: "chevron.right.circle.fill", label: "RIGHT")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                    .padding(.trailing, 14)
+            }
+            if elevation == .raise {
+                guidanceChevron(systemName: "chevron.up.circle.fill", label: "RAISE")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 110)
+            }
+            if elevation == .lower {
+                guidanceChevron(systemName: "chevron.down.circle.fill", label: "LOWER")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 150)
+            }
+
+            if let label, orbit != .hold || elevation != .hold {
+                VStack {
+                    Spacer()
+                    Text(label)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.black.opacity(0.45), in: Capsule())
+                        .overlay(Capsule().stroke(tint.opacity(0.7), lineWidth: 1.2))
+                        .padding(.bottom, 210)
+                }
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: orbit)
+        .animation(.easeOut(duration: 0.2), value: elevation)
+    }
+
+    private func guidanceChevron(systemName: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 46, weight: .semibold))
+                .foregroundStyle(tint.opacity(0.95))
+                .shadow(color: .black.opacity(0.55), radius: 6, y: 2)
+            Text(label)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .tracking(1)
+                .foregroundStyle(.white.opacity(0.9))
+                .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
         }
     }
 }
