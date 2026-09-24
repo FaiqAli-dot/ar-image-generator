@@ -5,7 +5,10 @@ import Combine
 /// Guided capture session for **phone-stationary + object-on-turntable** workflow.
 ///
 /// Azimuth stored on each frame is **object orientation** (from `ObjectRotationProviding`),
-/// never phone yaw. CoreMotion still supplies elevation coaching and phone-stability gates.
+/// never phone yaw. CoreMotion supplies soft elevation coaching + phone-stability only.
+///
+/// Primary path: sequential **CAPTURE NEXT** (always works). Vision assist is optional and
+/// only advances when the phone is stable — phone motion must never fake object rotation.
 @MainActor
 final class GuidedCaptureSession: ObservableObject {
     @Published var pass: CapturePass = .horizontal
@@ -13,7 +16,7 @@ final class GuidedCaptureSession: ObservableObject {
     @Published var frames: [RawCaptureFrame] = []
     @Published var isCapturing = false
     @Published var isAutoArmed = false
-    @Published var lastMessage: String = "Keep phone still — rotate the object slowly ↻"
+    @Published var lastMessage: String = "PHONE STILL — rotate the DISH ↻, then tap CAPTURE NEXT"
     @Published var passComplete = false
     @Published var allComplete = false
     @Published var isBusyPhoto = false
@@ -45,21 +48,18 @@ final class GuidedCaptureSession: ObservableObject {
         })
     }
 
-    /// Next uncaptured slot ahead of the current **object** azimuth (rotate forward on the ring).
+    /// Next uncaptured slot in order (0→35). Sequential turntable UX — do not hunt via phone yaw.
     var nextTargetSlot: Int? {
         let captured = capturedSlotsForCurrentPass
         guard captured.count < CaptureConstants.viewsPerPass else { return nil }
-        let step = CaptureConstants.azimuthStepDegrees
-        let current = Int((objectAzimuthDegrees / step).rounded()) % CaptureConstants.viewsPerPass
-        for offset in 0..<CaptureConstants.viewsPerPass {
-            let slot = (current + offset) % CaptureConstants.viewsPerPass
+        for slot in 0..<CaptureConstants.viewsPerPass {
             if !captured.contains(slot) { return slot }
         }
         return nil
     }
 
-    /// Signed object-azimuth delta to the next target (−180…180). Positive = rotate object clockwise (RIGHT / ↻).
-    var azimuthDeltaToNextTarget: Double? {
+    /// Degrees of dish rotation still needed toward the next sequential slot (for coaching).
+    var degreesToNextTarget: Double? {
         guard let target = nextTargetSlot else { return nil }
         let targetAz = Double(target) * CaptureConstants.azimuthStepDegrees
         var delta = CapturedView.normalizeAzimuth(targetAz - objectAzimuthDegrees)
@@ -67,107 +67,115 @@ final class GuidedCaptureSession: ObservableObject {
         return delta
     }
 
-    /// Elevation error vs the soft band for the current pass (degrees). Positive = need to raise/tilt down more.
+    /// Soft elevation error for coaching only (never blocks CAPTURE NEXT).
     var elevationErrorDegrees: Double {
         let elev = motion.elevationDegrees
         switch pass {
         case .horizontal:
-            if elev > 12 { return 12 - elev } // negative → lower
-            if elev < -8 { return -8 - elev } // positive → raise a bit
+            if elev > 18 { return 18 - elev }
+            if elev < -12 { return -12 - elev }
             return 0
         case .elevated:
-            if elev < 8 { return 8 - elev } // positive → raise
-            if elev > 28 { return 28 - elev } // negative → lower
+            // Modest look-down band — not a flip. Ideal ~15°.
+            if elev < 3 { return 3 - elev }
+            if elev > 35 { return 35 - elev }
             let ideal = pass.targetElevationDegrees
             let soft = elev - ideal
-            if abs(soft) < 6 { return 0 }
+            if abs(soft) < 10 { return 0 }
             return -soft
         }
     }
 
-    /// 0 = far off (red), 1 = capture-ready (green). Object azimuth + elevation + phone stability.
+    /// Green frame = phone still enough to shoot with CAPTURE NEXT (does NOT wait on Vision / phone yaw).
     var alignmentScore: Double {
         guard isAutoArmed, nextTargetSlot != nil else { return 0 }
-        let azErr = abs(azimuthDeltaToNextTarget ?? 180)
-        let azScore = max(0, min(1, 1 - (azErr - CaptureConstants.azimuthCaptureTolerance) / 45))
         let elevScore = elevationAlignmentScore
-        let stabilityScore = motion.isPhoneStable ? 1.0 : 0.25
-        return min(azScore, elevScore, stabilityScore)
+        let stabilityScore = motion.isPhoneStable ? 1.0 : 0.2
+        return min(elevScore, stabilityScore)
     }
 
-    /// True when auto-capture gates for the next target would succeed.
+    /// Ready for the primary path: CAPTURE NEXT (phone still + soft elevation OK).
     var isCaptureAligned: Bool {
-        guard isAutoArmed, let target = nextTargetSlot else { return false }
+        guard isAutoArmed, nextTargetSlot != nil else { return false }
+        return motion.isPhoneStable && elevationSoftOK
+    }
+
+    /// Optional Vision auto-shutter readiness (secondary). Never uses phone yaw.
+    var isVisionAutoReady: Bool {
+        guard isCaptureAligned, let target = nextTargetSlot else { return false }
+        let quality = rotation.trackingQuality
+        guard quality == .medium || quality == .high else { return false }
         let targetAz = Double(target) * CaptureConstants.azimuthStepDegrees
         return rotation.isAligned(to: targetAz)
-            && elevationBlockMessage() == nil
-            && motion.isPhoneStable
     }
 
+    /// Always coach clockwise dish rotation for sequential slots (turntable mental model).
     var orbitGuidance: CaptureOrbitGuidance {
-        guard let delta = azimuthDeltaToNextTarget else { return .hold }
-        if abs(delta) <= CaptureConstants.azimuthCaptureTolerance { return .hold }
-        return delta > 0 ? .right : .left
+        guard nextTargetSlot != nil else { return .hold }
+        if isVisionAutoReady { return .hold }
+        return .right
     }
 
     var elevationGuidance: CaptureElevationGuidance {
+        // Only nudge when clearly out of a soft band — never demand a 180° flip.
         let err = elevationErrorDegrees
-        if abs(err) < 1.5 { return .hold }
+        if abs(err) < 2.5 { return .hold }
         return err > 0 ? .raise : .lower
     }
 
-    /// Short arrow hint: which way to rotate the object toward the next empty tick.
     var nextTargetDirectionHint: String? {
-        guard nextTargetSlot != nil else { return nil }
+        guard let target = nextTargetSlot else { return nil }
         if !motion.isPhoneStable {
-            return "PHONE MOVING — keep still"
+            return "Do NOT rotate the phone — hold it still"
+        }
+        if isVisionAutoReady {
+            return "READY — auto-capturing this dish angle"
         }
         if isCaptureAligned {
-            return "READY TO CAPTURE — hold still"
+            return "READY — tap CAPTURE NEXT (or rotate dish ↻ ~10°)"
         }
-        var parts: [String] = []
-        if let delta = azimuthDeltaToNextTarget, abs(delta) > CaptureConstants.azimuthCaptureTolerance {
-            let amount = Int(abs(delta).rounded())
-            switch orbitGuidance {
-            case .left: parts.append("Rotate object ↺ \(amount)° more")
-            case .right: parts.append("Rotate object ↻ \(amount)° more")
-            case .hold: break
-            }
+        var parts: [String] = ["Rotate the DISH ↻ — not the phone"]
+        if pass == .elevated, elevationGuidance == .raise {
+            parts.append("tilt down a little once")
+        } else if elevationGuidance == .lower {
+            parts.append("lower phone slightly")
         }
-        switch elevationGuidance {
-        case .raise: parts.append(pass == .elevated ? "Raise / tilt down" : "Raise slightly")
-        case .lower: parts.append("Lower phone")
-        case .hold: break
-        }
-        if parts.isEmpty { return "Keep food centered" }
+        parts.append("then CAPTURE NEXT → \(target * 10)°")
         return parts.joined(separator: " · ")
     }
 
     var phoneStabilityLabel: String {
-        motion.isPhoneStable ? "Phone stable ✓" : "PHONE MOVING — keep still"
+        motion.isPhoneStable ? "Phone still ✓ — rotate the dish only" : "PHONE MOVING — freeze the phone"
+    }
+
+    private var elevationSoftOK: Bool {
+        elevationSoftWarning() == nil
     }
 
     private var elevationAlignmentScore: Double {
         let elev = motion.elevationDegrees
         switch pass {
         case .horizontal:
-            if elev <= 12 && elev >= -8 { return 1 }
-            if elev > 12 { return max(0, 1 - (elev - 12) / 22) }
-            return max(0, 1 - ((-8) - elev) / 22)
+            if elev <= 18 && elev >= -12 { return 1 }
+            if elev > 18 { return max(0, 1 - (elev - 18) / 25) }
+            return max(0, 1 - ((-12) - elev) / 25)
         case .elevated:
-            if elev >= 8 && elev <= 28 {
+            if elev >= 3 && elev <= 35 {
                 let drift = abs(elev - pass.targetElevationDegrees)
-                return max(0.55, 1 - drift / 30)
+                return max(0.55, 1 - drift / 40)
             }
-            if elev < 8 { return max(0, elev / 8) }
-            return max(0, 1 - (elev - 28) / 20)
+            if elev < 3 { return max(0.15, elev / 3) }
+            return max(0, 1 - (elev - 35) / 25)
         }
     }
 
     func prepare() async {
         await camera.configure()
         camera.onVideoFrame = { [weak self] buffer, timestamp in
-            self?.rotation.ingestVideoFrame(buffer, timestamp: timestamp)
+            guard let self else { return }
+            // Critical: never feed Vision while the phone is moving — that taught “spin phone.”
+            guard self.motion.isPhoneStable else { return }
+            self.rotation.ingestVideoFrame(buffer, timestamp: timestamp)
         }
         camera.start()
         motion.start()
@@ -189,8 +197,8 @@ final class GuidedCaptureSession: ObservableObject {
         passComplete = false
         isAutoArmed = true
         lastMessage = pass == .horizontal
-            ? "Keep phone still — rotate the object slowly ↻"
-            : "Raise / tilt once, then keep phone still and rotate again ↻"
+            ? "PHONE STILL — rotate the DISH ↻, then tap CAPTURE NEXT"
+            : "Raise ~15 cm + slight tilt down ONCE, freeze phone, rotate DISH ↻, CAPTURE NEXT"
         holdMessageUntil = .distantPast
         rotation.resetObjectReference()
         if pass == .horizontal {
@@ -203,26 +211,18 @@ final class GuidedCaptureSession: ObservableObject {
         refreshCoachingMessage()
         guard !isBusyPhoto, Date() > cooldownUntil else { return }
 
-        // Never auto-capture while the phone is moving significantly.
-        guard motion.isPhoneStable else { return }
-
-        let step = CaptureConstants.azimuthStepDegrees
-        let slot = Int((rotation.nearestCaptureSlot(step: step) / step).rounded()) % CaptureConstants.viewsPerPass
+        // Secondary path only: Vision must be confident AND phone still.
+        // Never auto-fire from phone yaw.
+        guard isVisionAutoReady, let slot = nextTargetSlot else { return }
         let elev = pass.targetElevationDegrees
         let key = "\(pass.rawValue)-\(slot)"
         guard !capturedKeys.contains(key) else { return }
-        guard rotation.isAligned(to: Double(slot) * step) else { return }
-
-        if let block = elevationBlockMessage() {
-            lastMessage = block
-            return
-        }
 
         Task { await captureCurrent(slot: slot, elevation: elev, key: key, manual: false) }
     }
 
-    /// Reliable MVP fallback: capture the next uncaptured object-orientation slot.
-    /// Does not use phone yaw. Still respects phone-stability soft coaching (does not hard-block).
+    /// Primary capture path: next sequential object-orientation slot.
+    /// Never blocked by Vision, phone yaw, elevation soft-gates, or brief hand tremor.
     func captureNearestManually() {
         guard isAutoArmed, !isBusyPhoto, !passComplete else { return }
         guard let slot = nextTargetSlot else {
@@ -232,29 +232,32 @@ final class GuidedCaptureSession: ObservableObject {
         }
         let key = "\(pass.rawValue)-\(slot)"
         guard !capturedKeys.contains(key) else {
-            lastMessage = "This angle is already captured — rotate further"
+            lastMessage = "This angle is already captured — rotate the dish further"
             holdMessageUntil = Date().addingTimeInterval(1.2)
             return
         }
+        // Soft coaching only — still capture.
         if !motion.isPhoneStable {
-            lastMessage = "PHONE MOVING — steady the phone, then CAPTURE NEXT"
-            holdMessageUntil = Date().addingTimeInterval(1.0)
-            return
-        }
-        if let block = elevationBlockMessage() {
-            lastMessage = block
-            holdMessageUntil = Date().addingTimeInterval(1.2)
-            return
+            lastMessage = "Capturing — try to keep the phone still next time"
+            holdMessageUntil = Date().addingTimeInterval(0.6)
+        } else if let warn = elevationSoftWarning() {
+            lastMessage = warn
+            holdMessageUntil = Date().addingTimeInterval(0.6)
         }
         Task { await captureCurrent(slot: slot, elevation: pass.targetElevationDegrees, key: key, manual: true) }
     }
 
-    private func elevationBlockMessage() -> String? {
-        if pass == .elevated && motion.elevationDegrees < 8 {
-            return "Raise phone and look slightly down at the food"
+    /// Soft coaching strings only — CAPTURE NEXT ignores these.
+    private func elevationSoftWarning() -> String? {
+        let elev = motion.elevationDegrees
+        if pass == .elevated && elev < 3 {
+            return "Pass 2: raise ~15 cm and tilt down a little (not a flip), then freeze"
         }
-        if pass == .horizontal && motion.elevationDegrees > 12 {
-            return "Lower the phone to table height"
+        if pass == .horizontal && elev > 18 {
+            return "Lower toward table height, then freeze — rotate the dish only"
+        }
+        if pass == .elevated && elev > 35 {
+            return "Too steep — ease tilt back toward ~15°, then freeze"
         }
         return nil
     }
@@ -262,20 +265,18 @@ final class GuidedCaptureSession: ObservableObject {
     private func refreshCoachingMessage() {
         guard Date() > holdMessageUntil, !isBusyPhoto else { return }
         if !motion.isPhoneStable {
-            lastMessage = "PHONE MOVING — keep still"
+            lastMessage = "Do NOT spin the phone — hold still and rotate the DISH"
             return
         }
-        if let block = elevationBlockMessage() {
-            lastMessage = block
+        if let warn = elevationSoftWarning() {
+            lastMessage = warn
             return
         }
         if let hint = nextTargetDirectionHint {
             lastMessage = hint
             return
         }
-        lastMessage = pass == .horizontal
-            ? "Keep phone still — rotate the object slowly ↻"
-            : "Keep phone still — rotate the object ↻"
+        lastMessage = "PHONE STILL — rotate the DISH ↻, then tap CAPTURE NEXT"
     }
 
     private func captureCurrent(slot: Int, elevation: Double, key: String, manual: Bool) async {
@@ -300,7 +301,7 @@ final class GuidedCaptureSession: ObservableObject {
             } else {
                 rotation.didCapture(atAzimuth: azimuth)
             }
-            lastMessage = "Captured \(slot * 10)° — rotate to the next angle"
+            lastMessage = "Captured \(slot * 10)° — rotate DISH ↻ ~10°, tap CAPTURE NEXT"
             holdMessageUntil = Date().addingTimeInterval(0.9)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
@@ -316,7 +317,7 @@ final class GuidedCaptureSession: ObservableObject {
                 }
             }
         } catch {
-            lastMessage = "Capture failed — try CAPTURE NEXT or keep rotating"
+            lastMessage = "Capture failed — tap CAPTURE NEXT again"
             holdMessageUntil = Date().addingTimeInterval(1.5)
         }
     }

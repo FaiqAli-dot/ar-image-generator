@@ -45,36 +45,34 @@ Deploy guide: [docs/deploy-backend.md](docs/deploy-backend.md).
 
 ## How to capture (rotating object — Phase 3)
 
-Phone stays roughly **stationary**; the food rotates on a **turntable / lazy Susan**. Stored azimuth is **object orientation**, not phone yaw. Phone gyro is never used as the object angle.
+Phone stays **stationary**; the food rotates on a **turntable / lazy Susan**. Stored azimuth is **object orientation**, not phone yaw. Phone gyro is never used as the object angle.
 
-1. Place food on a turntable with even light; prop the phone ~40–50 cm away with the whole dish in frame, then keep it still.
-2. **Pass 1 (sides):** phone upright at food height; rotate the object a slow full circle (~36 views at 10°). Ring ticks fill when the frame is green (**READY TO CAPTURE**).
-3. **Pass 2 (slightly above):** raise/tilt the phone once, hold still, rotate the object through 360° again.
-4. White needle = **object** angle; filled ticks = captured; bright tick = next target. Edge arrows say **ROTATE OBJECT** ↻/↺.
-5. Optional lightweight Vision optical-flow assist estimates object rotation for auto-capture. **CAPTURE NEXT** is the reliable manual fallback (does not invent angles from phone yaw).
-6. **Phone stable ✓** / **PHONE MOVING** uses CoreMotion so photos don’t fire while the hand-held phone is shaking.
+1. Place food on a turntable with even light; prop the phone ~40–50 cm away with the whole dish in frame, then **freeze** the phone.
+2. **Pass 1 (sides):** phone upright at food height. Each step: rotate the **dish** ~10°, tap **CAPTURE NEXT** (primary). Do not walk or spin the phone.
+3. **Pass 2 (slightly above):** raise ~15 cm and tilt down a little **once** (~15°) — never a 180° flip — freeze again, then rotate the dish with CAPTURE NEXT through 360°.
+4. Green frame = phone still enough to shoot. White needle = object angle. Edge arrows say **DISH** ↻/↺.
+5. Optional Vision assist may auto-capture only when the phone is still and Vision is confident. CAPTURE NEXT always works and does not wait on phone yaw.
+6. Vision is **not** fed while the phone is moving (so spinning the phone cannot fake object rotation).
 
-Elevation coaching still uses phone pitch for pass height bands. DEMO BURGER, processing, upload, and photographic AR are unchanged.
+Elevation coaching is soft only. DEMO BURGER, processing, upload, and photographic AR are unchanged in pipeline; AR billboards are upright + cutout-centered on the placement point.
 
-### Mac / iPhone test procedure
+### Mac / iPhone retest (after UX + placement fix)
 
-This Linux cloud environment **cannot** run Xcode or a physical device. On a Mac:
-
-1. `git checkout` this branch → `open ARFoodCapture/ARFoodCapture.xcodeproj`
-2. Select a physical iPhone (iOS 17+), set signing team, build & run
-3. Confirm **DEMO BURGER** still opens in MY OBJECTS → VIEW IN AR
-4. CAPTURE NEW FOOD → instructions mention turntable / rotate object
-5. Place a burger (or stand-in) on a lazy Susan; prop phone; Pass 1 rotate 360°; Pass 2 raise once and rotate again
-6. Verify ~72 frames process; AR view switching still works; optional upload still works
-7. Long-press the `n / 72` progress label during capture to open hidden rotation debug (phone yaw vs object estimate vs Vision quality)
-8. Confirm CAPTURE NEXT works with Vision assist disabled/noisy (cover/move object irregularly)
+1. `git checkout` this branch → `open ARFoodCapture/ARFoodCapture.xcodeproj` → run on physical iPhone
+2. **DEMO BURGER** → VIEW IN AR → tap to place: food should be **right-side-up** and sitting on the tap point (not floating offset / inverted)
+3. CAPTURE NEW FOOD → instructions must say phone frozen / dish rotates / CAPTURE NEXT primary
+4. Lazy Susan capture Pass 1: freeze phone, rotate dish, CAPTURE NEXT ×36 — must work **without** spinning the phone
+5. Pass 2: small raise + slight tilt only; CAPTURE NEXT still works if tilt is imperfect
+6. Process → place new object in AR: upright + centered like DEMO
+7. Optional: long-press `n / 72` debug — phone yaw must not equal object angle; spinning phone must not advance Vision delta
 
 ### Honest limitations
 
-- Vision rotation assist is **approximate** (center-crop optical flow) — not a calibrated encoder. Uneven lighting, plain turntables, or motion blur reduce quality; prefer **CAPTURE NEXT**.
+- Vision rotation assist is **approximate** and secondary; CAPTURE NEXT is the reliable path.
 - Phone stability is a practical CoreMotion heuristic, not a tripod lock.
-- `MotorizedRotationProvider` is a **stub only** — no Bluetooth / motor control in this phase.
-- No claim of “gyro senses object angle.”
+- `MotorizedRotationProvider` is a **stub only**.
+- AR upright fix assumes RealityKit samples CG textures with V inverted vs UIKit; cutout bounds are alpha-based and may be soft on heavy transparency.
+- This Linux/cloud agent environment **cannot** run Xcode or a physical iPhone.
 
 ## App flow (Phase 2)
 

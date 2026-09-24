@@ -4,11 +4,11 @@ struct CaptureInstructionsView: View {
     @Binding var path: NavigationPath
 
     private let steps: [(String, String)] = [
-        ("1", "Place the food on a lazy Susan / turntable with good, even light."),
-        ("2", "Prop the phone ~40–50 cm away so the whole dish stays in frame — then keep the phone still."),
-        ("3", "You will rotate the object a full circle twice — sides first, then slightly above."),
-        ("4", "Photos capture when the frame turns green (READY TO CAPTURE). Use CAPTURE NEXT if a tick stalls."),
-        ("5", "Rotate slowly so every tick on the ring fills in. Phone gyro is not the object angle.")
+        ("1", "Put the food on a lazy Susan / turntable with even light."),
+        ("2", "Prop the phone ~40–50 cm away so the whole dish is in frame — then FREEZE the phone."),
+        ("3", "Rotate only the dish. Do not walk around. Do not spin or flip the phone."),
+        ("4", "Each step: rotate the dish ~10°, tap CAPTURE NEXT. Green frame = phone still enough to shoot."),
+        ("5", "Pass 2: raise the phone ~15 cm and tilt down a little once, freeze again, then rotate the dish through 360° — never a 180° phone flip.")
     ]
 
     var body: some View {
@@ -26,11 +26,11 @@ struct CaptureInstructionsView: View {
                     .font(.system(size: 34, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Rotating object — about 72 photos")
+                Text("Phone stays put · dish rotates · ~72 photos")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Keep the phone roughly fixed. Rotate the dish on a turntable. Azimuth is object orientation — not phone yaw.")
+                Text("CAPTURE NEXT always works. Object angle is the dish orientation — never phone yaw. Spinning the phone will not capture angles correctly.")
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
