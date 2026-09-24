@@ -52,10 +52,15 @@ struct CaptureDebugView: View {
                     }
                 }
 
-                Section("Live motion") {
-                    Text("Azimuth: \(motion.azimuthDegrees, specifier: "%.1f")°")
-                    Text("Elevation: \(motion.elevationDegrees, specifier: "%.1f")°")
+                Section("Live phone motion (NOT object azimuth)") {
+                    Text("Phone yaw: \(motion.azimuthDegrees, specifier: "%.1f")°")
+                    Text("Elevation (pitch map): \(motion.elevationDegrees, specifier: "%.1f")°")
+                    Text("Phone stable: \(motion.isPhoneStable ? "yes" : "no")")
+                    Text("Motion energy: \(motion.phoneMotionMagnitude, specifier: "%.2f")")
                     Text("Distance hint: \(motion.estimatedDistanceMeters, specifier: "%.2f") m")
+                    Text("Object angle comes from ManualRotationProvider / Vision — never phone yaw.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let selector {

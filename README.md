@@ -43,18 +43,38 @@ cd backend && npm install && npm start
 
 Deploy guide: [docs/deploy-backend.md](docs/deploy-backend.md).
 
-## How to capture (guided walk-around)
+## How to capture (rotating object — Phase 3)
 
-There is **no shutter**. The app auto-captures ~72 photos from device motion as you orbit the dish.
+Phone stays roughly **stationary**; the food rotates on a **turntable / lazy Susan**. Stored azimuth is **object orientation**, not phone yaw. Phone gyro is never used as the object angle.
 
-1. Place food on a flat surface with even light; stand ~40–50 cm away with the whole dish in frame.
-2. **Pass 1 (sides):** hold the phone upright at food height; walk a slow full circle. Ring ticks fill automatically.
-3. **Pass 2 (slightly above):** raise the phone, tilt slightly down, walk the same circle again.
-4. White needle = your angle; filled ticks = captured; bright tick = next target. Move slowly until all ticks light up.
-5. **Frame color** goes red → orange → yellow → green as you align (azimuth + height). Edge arrows show orbit left/right and raise/lower.
-6. If a tick won’t fill while you hold that angle, use **Capture now** as a manual fallback for the nearest slot.
+1. Place food on a turntable with even light; prop the phone ~40–50 cm away with the whole dish in frame, then keep it still.
+2. **Pass 1 (sides):** phone upright at food height; rotate the object a slow full circle (~36 views at 10°). Ring ticks fill when the frame is green (**READY TO CAPTURE**).
+3. **Pass 2 (slightly above):** raise/tilt the phone once, hold still, rotate the object through 360° again.
+4. White needle = **object** angle; filled ticks = captured; bright tick = next target. Edge arrows say **ROTATE OBJECT** ↻/↺.
+5. Optional lightweight Vision optical-flow assist estimates object rotation for auto-capture. **CAPTURE NEXT** is the reliable manual fallback (does not invent angles from phone yaw).
+6. **Phone stable ✓** / **PHONE MOVING** uses CoreMotion so photos don’t fire while the hand-held phone is shaking.
 
-Elevation coaching (“Lower the phone to table height” / “Raise phone and look slightly down”) means the phone pitch is outside the soft band for the current pass — adjust height/tilt, then keep walking.
+Elevation coaching still uses phone pitch for pass height bands. DEMO BURGER, processing, upload, and photographic AR are unchanged.
+
+### Mac / iPhone test procedure
+
+This Linux cloud environment **cannot** run Xcode or a physical device. On a Mac:
+
+1. `git checkout` this branch → `open ARFoodCapture/ARFoodCapture.xcodeproj`
+2. Select a physical iPhone (iOS 17+), set signing team, build & run
+3. Confirm **DEMO BURGER** still opens in MY OBJECTS → VIEW IN AR
+4. CAPTURE NEW FOOD → instructions mention turntable / rotate object
+5. Place a burger (or stand-in) on a lazy Susan; prop phone; Pass 1 rotate 360°; Pass 2 raise once and rotate again
+6. Verify ~72 frames process; AR view switching still works; optional upload still works
+7. Long-press the `n / 72` progress label during capture to open hidden rotation debug (phone yaw vs object estimate vs Vision quality)
+8. Confirm CAPTURE NEXT works with Vision assist disabled/noisy (cover/move object irregularly)
+
+### Honest limitations
+
+- Vision rotation assist is **approximate** (center-crop optical flow) — not a calibrated encoder. Uneven lighting, plain turntables, or motion blur reduce quality; prefer **CAPTURE NEXT**.
+- Phone stability is a practical CoreMotion heuristic, not a tripod lock.
+- `MotorizedRotationProvider` is a **stub only** — no Bluetooth / motor control in this phase.
+- No claim of “gyro senses object angle.”
 
 ## App flow (Phase 2)
 

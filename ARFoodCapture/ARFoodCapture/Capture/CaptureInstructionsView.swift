@@ -4,11 +4,11 @@ struct CaptureInstructionsView: View {
     @Binding var path: NavigationPath
 
     private let steps: [(String, String)] = [
-        ("1", "Place the food on a flat surface with good, even light."),
-        ("2", "Stand about 40–50 cm away so the whole dish stays in frame."),
-        ("3", "You will walk a full circle twice — sides first, then slightly above."),
-        ("4", "The app takes photos automatically. There is no shutter — do not tap to shoot."),
-        ("5", "Move slowly so every tick on the ring fills in as you orbit.")
+        ("1", "Place the food on a lazy Susan / turntable with good, even light."),
+        ("2", "Prop the phone ~40–50 cm away so the whole dish stays in frame — then keep the phone still."),
+        ("3", "You will rotate the object a full circle twice — sides first, then slightly above."),
+        ("4", "Photos capture when the frame turns green (READY TO CAPTURE). Use CAPTURE NEXT if a tick stalls."),
+        ("5", "Rotate slowly so every tick on the ring fills in. Phone gyro is not the object angle.")
     ]
 
     var body: some View {
@@ -26,11 +26,11 @@ struct CaptureInstructionsView: View {
                     .font(.system(size: 34, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Guided walk-around — about 72 photos")
+                Text("Rotating object — about 72 photos")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Photos capture from your motion. Walk slowly, keep the dish centered, and watch the ring fill in.")
+                Text("Keep the phone roughly fixed. Rotate the dish on a turntable. Azimuth is object orientation — not phone yaw.")
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

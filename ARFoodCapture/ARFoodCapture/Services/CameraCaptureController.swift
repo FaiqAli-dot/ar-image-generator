@@ -2,8 +2,11 @@ import Foundation
 import AVFoundation
 import UIKit
 import Combine
+import CoreMedia
+import CoreVideo
 
 /// Camera capture with AE/AF/AWB lock once the session is ready.
+/// Optional low-rate video frames feed Vision rotation assist (object angle — not phone yaw).
 @MainActor
 final class CameraCaptureController: NSObject, ObservableObject {
     @Published var isSessionRunning = false
@@ -13,9 +16,14 @@ final class CameraCaptureController: NSObject, ObservableObject {
 
     let session = AVCaptureSession()
     private let photoOutput = AVCapturePhotoOutput()
+    private let videoOutput = AVCaptureVideoDataOutput()
     private let sessionQueue = DispatchQueue(label: "arfood.camera.session")
+    private let videoQueue = DispatchQueue(label: "arfood.camera.video")
     private var device: AVCaptureDevice?
     private var continuation: CheckedContinuation<UIImage, Error>?
+
+    /// Receives preview-rate frames for optional Vision object-rotation assist.
+    var onVideoFrame: ((CVPixelBuffer, TimeInterval) -> Void)?
 
     func configure() async {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
@@ -49,6 +57,15 @@ final class CameraCaptureController: NSObject, ObservableObject {
                 if self.session.canAddOutput(self.photoOutput) {
                     self.session.addOutput(self.photoOutput)
                     self.photoOutput.maxPhotoQualityPrioritization = .balanced
+                }
+
+                self.videoOutput.alwaysDiscardsLateVideoFrames = true
+                self.videoOutput.videoSettings = [
+                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+                ]
+                self.videoOutput.setSampleBufferDelegate(self, queue: self.videoQueue)
+                if self.session.canAddOutput(self.videoOutput) {
+                    self.session.addOutput(self.videoOutput)
                 }
             }
         }
@@ -132,6 +149,20 @@ extension CameraCaptureController: AVCapturePhotoCaptureDelegate {
             }
             continuation?.resume(returning: image)
             continuation = nil
+        }
+    }
+}
+
+extension CameraCaptureController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    nonisolated func captureOutput(
+        _ output: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let ts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
+        Task { @MainActor in
+            self.onVideoFrame?(pixelBuffer, ts)
         }
     }
 }
