@@ -17,9 +17,14 @@ final class PhotographicViewSelector: ObservableObject {
 
     let object: FoodObject
     private var textures: [String: TextureResource] = [:]
-    private var images: [String: CGImage] = [:]
     /// Opaque content bounds in image space (origin top-left, 0…1) for upright placement.
     private var contentBounds: [String: CutoutContentBounds] = [:]
+    private var textureLRU: [String] = []
+    private var provider: PhotographicImageProviding?
+    /// Cap GPU textures so walking around the object cannot jetsam the process.
+    private let maxCachedTextures = 6
+    /// Downscale before TextureResource upload (full 1024² × 72 views OOMs on device).
+    private let maxTextureDimension: CGFloat = 512
     private var lastFrameTime: CFTimeInterval = 0
     private var frameCount = 0
 
@@ -27,33 +32,77 @@ final class PhotographicViewSelector: ObservableObject {
         self.object = object
     }
 
+    /// Attaches the image source and warms only the first view (not all angles).
     func preload(store: ObjectLibraryStore) {
         preload(provider: LocalPhotographicImageProvider(object: object, store: store))
     }
 
     func preload(provider: PhotographicImageProviding) {
-        for view in object.views {
-            guard let ui = provider.loadUIImage(named: view.image) else { continue }
-            let upright = ui.normalizedUp()
-            guard let cg = upright.cgImage else { continue }
-            // RealityKit UnlitMaterial on generatePlane often samples CGImage with V flipped
-            // relative to UIKit — flip vertically so food is right-side-up in AR.
-            let forTexture = PhotographicARMath.flipVertically(cg) ?? cg
-            images[view.image] = forTexture
-            contentBounds[view.image] = CutoutContentBounds.analyze(cg)
-            if let tex = try? TextureResource.generate(
-                from: forTexture,
-                options: TextureResource.CreateOptions(semantic: .color)
-            ) {
-                textures[view.image] = tex
-            }
+        self.provider = provider
+        if let first = object.views.first?.image {
+            _ = texture(named: first)
         }
     }
 
-    func texture(named name: String) -> TextureResource? { textures[name] }
+    func texture(named name: String) -> TextureResource? {
+        if let existing = textures[name] {
+            touchLRU(name)
+            return existing
+        }
+        return ensureTexture(named: name)
+    }
 
     func cutoutBounds(named name: String) -> CutoutContentBounds {
-        contentBounds[name] ?? .fullFrame
+        if let bounds = contentBounds[name] { return bounds }
+        _ = ensureTexture(named: name)
+        return contentBounds[name] ?? .fullFrame
+    }
+
+    private func ensureTexture(named name: String) -> TextureResource? {
+        guard let provider else { return nil }
+        guard let ui = provider.loadUIImage(named: name) else { return nil }
+        let upright = ui.normalizedUp()
+        guard let scaled = Self.downscaled(upright, maxDimension: maxTextureDimension),
+              let cg = scaled.cgImage else { return nil }
+        contentBounds[name] = CutoutContentBounds.analyze(cg)
+        // RealityKit UnlitMaterial on generatePlane often samples CGImage with V flipped
+        // relative to UIKit — flip vertically so food is right-side-up in AR.
+        let forTexture = PhotographicARMath.flipVertically(cg) ?? cg
+        guard let tex = try? TextureResource.generate(
+            from: forTexture,
+            options: TextureResource.CreateOptions(semantic: .color)
+        ) else { return nil }
+        textures[name] = tex
+        touchLRU(name)
+        evictIfNeeded()
+        return tex
+    }
+
+    private func touchLRU(_ name: String) {
+        textureLRU.removeAll { $0 == name }
+        textureLRU.append(name)
+    }
+
+    private func evictIfNeeded() {
+        while textureLRU.count > maxCachedTextures {
+            let oldest = textureLRU.removeFirst()
+            textures.removeValue(forKey: oldest)
+            // Keep contentBounds — tiny and avoids re-analyzing on revisit.
+        }
+    }
+
+    private static func downscaled(_ image: UIImage, maxDimension: CGFloat) -> UIImage? {
+        let size = image.size
+        let maxDim = max(size.width, size.height)
+        guard maxDim > maxDimension, maxDim > 0 else { return image }
+        let scale = maxDimension / maxDim
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = false
+        return UIGraphicsImageRenderer(size: newSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
     }
 
     func updateViewer(relativeAzimuth: Double, elevation: Double) {
