@@ -7,8 +7,9 @@ import Combine
 /// Azimuth stored on each frame is **object orientation** (from `ObjectRotationProviding`),
 /// never phone yaw. CoreMotion supplies soft elevation coaching + phone-stability only.
 ///
-/// Primary path: sequential **CAPTURE NEXT** (always works). Vision assist is optional and
-/// only advances when the phone is stable — phone motion must never fake object rotation.
+/// Primary path: sequential **CAPTURE NEXT** (always works for soft elevation). Optional
+/// per-photo quality checks can offer retake. Adaptive coverage can finish with fewer than 72
+/// photos; classic72 keeps the original full sequence.
 @MainActor
 final class GuidedCaptureSession: ObservableObject {
     @Published var pass: CapturePass = .horizontal
@@ -20,6 +21,11 @@ final class GuidedCaptureSession: ObservableObject {
     @Published var passComplete = false
     @Published var allComplete = false
     @Published var isBusyPhoto = false
+    @Published var sequenceMode: CaptureSequenceMode = .adaptiveCoverage
+    @Published var isPaused = false
+    @Published var lastQualityIssue: CaptureQualityIssue?
+    @Published var offerRetake = false
+    @Published var nextViewpointLabel: String = ""
 
     let camera = CameraCaptureController()
     let motion = MotionCaptureGuide()
@@ -28,13 +34,43 @@ final class GuidedCaptureSession: ObservableObject {
     /// Future extension point — constructed so the type stays linked; not started.
     let motorizedStub = MotorizedRotationProvider()
 
+    private var planner = CaptureCoveragePlanner(mode: .adaptiveCoverage)
     private var capturedKeys = Set<String>()
+    private var slotKeysInOrder: [Int] = []
     private var cooldownUntil: Date = .distantPast
     /// Suppresses coaching overwrite right after a successful capture flash.
     private var holdMessageUntil: Date = .distantPast
+    private var lastFingerprint: [UInt8]?
+    private var pendingFillViewpoint: CaptureViewpoint?
+    private var widthCm: Double = 12
+    private var objectName: String = "My Food"
+    private var lastCapturedSlotKey: Int?
 
     var capturedCount: Int { frames.count }
-    var progressText: String { "\(capturedCount) / \(CaptureConstants.totalViews)" }
+
+    var progressText: String {
+        switch sequenceMode {
+        case .classic72:
+            return "\(capturedCount) / \(CaptureConstants.totalViews)"
+        case .adaptiveCoverage:
+            let minT = planner.expectedMinimumTotal
+            return "\(capturedCount) / \(minT)+ · sectors"
+        }
+    }
+
+    var coveredSectorCount: Int {
+        planner.coveredSectorIndices(pass: pass, capturedSlots: capturedSlots).count
+    }
+
+    var missingSectorsText: String {
+        let missing = planner.missingSectorIndices(pass: pass, capturedSlots: capturedSlots)
+        if missing.isEmpty { return "All sectors covered for this pass" }
+        let names = missing.prefix(3).map { idx -> String in
+            let slot = idx * CaptureCoveragePlanner.adaptiveSectorStepSlots
+            return ViewpointGuidance.compassName(azimuth: slot * Int(CaptureConstants.azimuthStepDegrees))
+        }
+        return "Missing: " + names.joined(separator: ", ")
+    }
 
     /// Object orientation from the rotation provider — never phone yaw.
     var objectAzimuthDegrees: Double { rotation.objectAzimuthDegrees }
@@ -48,14 +84,17 @@ final class GuidedCaptureSession: ObservableObject {
         })
     }
 
-    /// Next uncaptured slot in order (0→35). Sequential turntable UX — do not hunt via phone yaw.
+    /// Next uncaptured planned viewpoint (required before optional fills).
     var nextTargetSlot: Int? {
-        let captured = capturedSlotsForCurrentPass
-        guard captured.count < CaptureConstants.viewsPerPass else { return nil }
-        for slot in 0..<CaptureConstants.viewsPerPass {
-            if !captured.contains(slot) { return slot }
+        if let fill = pendingFillViewpoint, fill.pass == pass {
+            return fill.slot
         }
-        return nil
+        return planner.nextViewpoint(pass: pass, capturedSlots: capturedSlots)?.slot
+    }
+
+    var nextViewpoint: CaptureViewpoint? {
+        if let fill = pendingFillViewpoint, fill.pass == pass { return fill }
+        return planner.nextViewpoint(pass: pass, capturedSlots: capturedSlots)
     }
 
     /// Degrees of dish rotation still needed toward the next sequential slot (for coaching).
@@ -76,7 +115,6 @@ final class GuidedCaptureSession: ObservableObject {
             if elev < -12 { return -12 - elev }
             return 0
         case .elevated:
-            // Modest look-down band — not a flip. Ideal ~15°.
             if elev < 3 { return 3 - elev }
             if elev > 35 { return 35 - elev }
             let ideal = pass.targetElevationDegrees
@@ -88,7 +126,7 @@ final class GuidedCaptureSession: ObservableObject {
 
     /// Green frame = phone still enough to shoot with CAPTURE NEXT (does NOT wait on Vision / phone yaw).
     var alignmentScore: Double {
-        guard isAutoArmed, nextTargetSlot != nil else { return 0 }
+        guard isAutoArmed, !isPaused, nextTargetSlot != nil else { return 0 }
         let elevScore = elevationAlignmentScore
         let stabilityScore = motion.isPhoneStable ? 1.0 : 0.2
         return min(elevScore, stabilityScore)
@@ -96,7 +134,7 @@ final class GuidedCaptureSession: ObservableObject {
 
     /// Ready for the primary path: CAPTURE NEXT (phone still + soft elevation OK).
     var isCaptureAligned: Bool {
-        guard isAutoArmed, nextTargetSlot != nil else { return false }
+        guard isAutoArmed, !isPaused, nextTargetSlot != nil else { return false }
         return motion.isPhoneStable && elevationSoftOK
     }
 
@@ -111,41 +149,44 @@ final class GuidedCaptureSession: ObservableObject {
 
     /// Always coach clockwise dish rotation for sequential slots (turntable mental model).
     var orbitGuidance: CaptureOrbitGuidance {
-        guard nextTargetSlot != nil else { return .hold }
+        guard nextTargetSlot != nil, !isPaused else { return .hold }
         if isVisionAutoReady { return .hold }
         return .right
     }
 
     var elevationGuidance: CaptureElevationGuidance {
-        // Only nudge when clearly out of a soft band — never demand a 180° flip.
         let err = elevationErrorDegrees
         if abs(err) < 2.5 { return .hold }
         return err > 0 ? .raise : .lower
     }
 
     var nextTargetDirectionHint: String? {
-        guard let target = nextTargetSlot else { return nil }
+        guard !isPaused else { return CaptureTrackingMessages.backgroundedHint() }
+        guard let vp = nextViewpoint else { return nil }
+        if camera.permissionDenied {
+            return CaptureTrackingMessages.cameraPermissionDenied()
+        }
+        if !motion.isAvailable {
+            return CaptureTrackingMessages.motionUnavailable()
+        }
         if !motion.isPhoneStable {
-            return "Do NOT rotate the phone — hold it still"
+            return CaptureTrackingMessages.phoneMoving()
         }
         if isVisionAutoReady {
-            return "READY — auto-capturing this dish angle"
+            return "READY — auto-capturing \(vp.label)"
         }
         if isCaptureAligned {
-            return "READY — tap CAPTURE NEXT (or rotate dish ↻ ~10°)"
+            return "READY — \(vp.label) · tap CAPTURE NEXT"
         }
-        var parts: [String] = ["Rotate the DISH ↻ — not the phone"]
-        if pass == .elevated, elevationGuidance == .raise {
-            parts.append("tilt down a little once")
-        } else if elevationGuidance == .lower {
-            parts.append("lower phone slightly")
+        if let deg = degreesToNextTarget {
+            return ViewpointGuidance.moveInstruction(degreesClockwise: deg, viewpoint: vp)
         }
-        parts.append("then CAPTURE NEXT → \(target * 10)°")
-        return parts.joined(separator: " · ")
+        return "Rotate the DISH ↻ → \(vp.label)"
     }
 
     var phoneStabilityLabel: String {
-        motion.isPhoneStable ? "Phone still ✓ — rotate the dish only" : "PHONE MOVING — freeze the phone"
+        if isPaused { return "Paused — progress saved" }
+        return motion.isPhoneStable ? "Phone still ✓ — rotate the dish only" : "PHONE MOVING — freeze the phone"
     }
 
     private var elevationSoftOK: Bool {
@@ -169,12 +210,21 @@ final class GuidedCaptureSession: ObservableObject {
         }
     }
 
+    func configure(mode: CaptureSequenceMode, widthCm: Double, objectName: String) {
+        sequenceMode = mode
+        planner = CaptureCoveragePlanner(mode: mode)
+        self.widthCm = widthCm
+        self.objectName = objectName
+    }
+
     func prepare() async {
         await camera.configure()
+        if camera.permissionDenied {
+            lastMessage = CaptureTrackingMessages.cameraPermissionDenied()
+        }
         camera.onVideoFrame = { [weak self] buffer, timestamp in
             guard let self else { return }
-            // Critical: never feed Vision while the phone is moving — that taught “spin phone.”
-            guard self.motion.isPhoneStable else { return }
+            guard self.motion.isPhoneStable, !self.isPaused else { return }
             self.rotation.ingestVideoFrame(buffer, timestamp: timestamp)
         }
         camera.start()
@@ -182,6 +232,9 @@ final class GuidedCaptureSession: ObservableObject {
         motion.resetOrbitReference()
         rotation.start()
         rotation.resetObjectReference()
+        if !motion.isAvailable {
+            lastMessage = CaptureTrackingMessages.motionUnavailable()
+        }
     }
 
     func teardown() {
@@ -195,10 +248,21 @@ final class GuidedCaptureSession: ObservableObject {
     func startPass(_ pass: CapturePass) {
         self.pass = pass
         passComplete = false
+        isPaused = false
         isAutoArmed = true
-        lastMessage = pass == .horizontal
-            ? "PHONE STILL — rotate the DISH ↻, then tap CAPTURE NEXT"
-            : "Raise ~15 cm + slight tilt down ONCE, freeze phone, rotate DISH ↻, CAPTURE NEXT"
+        pendingFillViewpoint = nil
+        offerRetake = false
+        lastQualityIssue = nil
+        if let vp = nextViewpoint {
+            nextViewpointLabel = vp.label
+            lastMessage = pass == .horizontal
+                ? "Next: \(vp.label) — freeze phone, rotate dish, CAPTURE NEXT"
+                : "Raise ~15 cm + slight tilt once, freeze, then \(vp.label)"
+        } else {
+            lastMessage = pass == .horizontal
+                ? "PHONE STILL — rotate the DISH ↻, then tap CAPTURE NEXT"
+                : "Raise ~15 cm + slight tilt down ONCE, freeze phone, rotate DISH ↻, CAPTURE NEXT"
+        }
         holdMessageUntil = .distantPast
         rotation.resetObjectReference()
         if pass == .horizontal {
@@ -207,26 +271,24 @@ final class GuidedCaptureSession: ObservableObject {
     }
 
     func tickAutoCapture() {
-        guard isAutoArmed, !passComplete else { return }
+        guard isAutoArmed, !passComplete, !isPaused else { return }
         refreshCoachingMessage()
+        if let vp = nextViewpoint {
+            nextViewpointLabel = vp.label
+        }
         guard !isBusyPhoto, Date() > cooldownUntil else { return }
-
-        // Secondary path only: Vision must be confident AND phone still.
-        // Never auto-fire from phone yaw.
         guard isVisionAutoReady, let slot = nextTargetSlot else { return }
         let elev = pass.targetElevationDegrees
         let key = "\(pass.rawValue)-\(slot)"
         guard !capturedKeys.contains(key) else { return }
-
         Task { await captureCurrent(slot: slot, elevation: elev, key: key, manual: false) }
     }
 
-    /// Primary capture path: next sequential object-orientation slot.
-    /// Never blocked by Vision, phone yaw, elevation soft-gates, or brief hand tremor.
+    /// Primary capture path: next planned object-orientation slot.
     func captureNearestManually() {
-        guard isAutoArmed, !isBusyPhoto, !passComplete else { return }
+        guard isAutoArmed, !isBusyPhoto, !passComplete, !isPaused else { return }
         guard let slot = nextTargetSlot else {
-            lastMessage = "All angles in this pass are captured"
+            lastMessage = "All planned angles in this pass are captured"
             holdMessageUntil = Date().addingTimeInterval(1.2)
             return
         }
@@ -236,7 +298,6 @@ final class GuidedCaptureSession: ObservableObject {
             holdMessageUntil = Date().addingTimeInterval(1.2)
             return
         }
-        // Soft coaching only — still capture.
         if !motion.isPhoneStable {
             lastMessage = "Capturing — try to keep the phone still next time"
             holdMessageUntil = Date().addingTimeInterval(0.6)
@@ -247,7 +308,7 @@ final class GuidedCaptureSession: ObservableObject {
         Task { await captureCurrent(slot: slot, elevation: pass.targetElevationDegrees, key: key, manual: true) }
     }
 
-    /// Soft coaching strings only — CAPTURE NEXT ignores these.
+    /// Soft coaching strings only — CAPTURE NEXT ignores these for shutter.
     private func elevationSoftWarning() -> String? {
         let elev = motion.elevationDegrees
         if pass == .elevated && elev < 3 {
@@ -263,9 +324,13 @@ final class GuidedCaptureSession: ObservableObject {
     }
 
     private func refreshCoachingMessage() {
-        guard Date() > holdMessageUntil, !isBusyPhoto else { return }
+        guard Date() > holdMessageUntil, !isBusyPhoto, !isPaused else { return }
+        if camera.permissionDenied {
+            lastMessage = CaptureTrackingMessages.cameraPermissionDenied()
+            return
+        }
         if !motion.isPhoneStable {
-            lastMessage = "Do NOT spin the phone — hold still and rotate the DISH"
+            lastMessage = CaptureTrackingMessages.phoneMoving()
             return
         }
         if let warn = elevationSoftWarning() {
@@ -284,6 +349,22 @@ final class GuidedCaptureSession: ObservableObject {
         defer { isBusyPhoto = false }
         do {
             let image = try await camera.capturePhoto()
+            let (decision, _, fingerprint) = CaptureQualityEvaluator.evaluate(
+                image: image,
+                previousFingerprint: lastFingerprint,
+                phoneStable: motion.isPhoneStable
+            )
+
+            // Hard rejects: keep shutter available but do not commit the slot.
+            if case .reject(let issue) = decision {
+                lastQualityIssue = issue
+                offerRetake = true
+                lastMessage = issue.message
+                holdMessageUntil = Date().addingTimeInterval(2.0)
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                return
+            }
+
             let azimuth = Double(slot) * CaptureConstants.azimuthStepDegrees
             let frame = RawCaptureFrame(
                 image: image,
@@ -294,19 +375,69 @@ final class GuidedCaptureSession: ObservableObject {
             )
             frames.append(frame)
             capturedKeys.insert(key)
-            capturedSlots.insert(slot + pass.rawValue * 100)
+            let slotKey = slot + pass.rawValue * 100
+            capturedSlots.insert(slotKey)
+            slotKeysInOrder.append(slotKey)
+            lastCapturedSlotKey = slotKey
+            lastFingerprint = fingerprint
             cooldownUntil = Date().addingTimeInterval(0.35)
+
+            if case .warn(let issue) = decision {
+                lastQualityIssue = issue
+                offerRetake = true
+                lastMessage = "Captured \(ViewpointGuidance.label(forSlot: slot, pass: pass)) — \(issue.message)"
+            } else {
+                lastQualityIssue = nil
+                offerRetake = false
+                lastMessage = "Captured \(ViewpointGuidance.label(forSlot: slot, pass: pass)) — rotate dish for next"
+            }
+            holdMessageUntil = Date().addingTimeInterval(0.9)
+
             if manual {
                 rotation.noteManualAdvance(toAzimuth: azimuth)
             } else {
                 rotation.didCapture(atAzimuth: azimuth)
             }
-            lastMessage = "Captured \(slot * 10)° — rotate DISH ↻ ~10°, tap CAPTURE NEXT"
-            holdMessageUntil = Date().addingTimeInterval(0.9)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-            let passCount = frames.filter { abs($0.elevation - elevation) < 1 }.count
-            if passCount >= CaptureConstants.viewsPerPass {
+            // Adaptive: optionally queue a fill after a weak required shot.
+            if let fill = planner.shouldRequestFill(
+                afterRequiredSlot: slot,
+                pass: pass,
+                capturedSlots: capturedSlots,
+                lastQualityAccepted: decision == .accept
+            ) {
+                pendingFillViewpoint = fill
+            } else if pendingFillViewpoint?.slot == slot {
+                pendingFillViewpoint = nil
+            } else {
+                pendingFillViewpoint = nil
+            }
+
+            evaluateCompletion()
+            try? persistRecovery(isPaused: false)
+        } catch {
+            lastMessage = "Capture failed — tap CAPTURE NEXT again"
+            holdMessageUntil = Date().addingTimeInterval(1.5)
+        }
+    }
+
+    private func evaluateCompletion() {
+        if planner.isPassComplete(pass: pass, capturedSlots: capturedSlots) {
+            // In adaptive mode, skip remaining optional fills once required sectors are done
+            // unless a fill was explicitly queued for quality.
+            if sequenceMode == .adaptiveCoverage, pendingFillViewpoint == nil {
+                passComplete = true
+                isAutoArmed = false
+                if pass == .elevated {
+                    allComplete = true
+                    lastMessage = "Coverage complete — \(capturedCount) photos"
+                } else {
+                    lastMessage = "SIDE COVERAGE COMPLETE"
+                }
+                return
+            }
+            if sequenceMode == .classic72 {
                 passComplete = true
                 isAutoArmed = false
                 if pass == .elevated {
@@ -316,17 +447,131 @@ final class GuidedCaptureSession: ObservableObject {
                     lastMessage = "SIDE VIEW COMPLETE"
                 }
             }
-        } catch {
-            lastMessage = "Capture failed — tap CAPTURE NEXT again"
-            holdMessageUntil = Date().addingTimeInterval(1.5)
+        }
+        if planner.isSessionComplete(capturedSlots: capturedSlots) {
+            allComplete = true
+            passComplete = true
+            isAutoArmed = false
+            lastMessage = sequenceMode == .classic72
+                ? "72 / 72 CAPTURE COMPLETE"
+                : "Coverage complete — \(capturedCount) photos"
         }
     }
 
     func beginElevatedPass() {
         pass = .elevated
         passComplete = false
-        capturedSlots = Set(capturedSlots.filter { $0 >= 100 })
+        // Keep horizontal slot keys so session completion / recovery stay consistent.
+        // The ring UI reads `capturedSlotsForCurrentPass` and only shows this pass.
+        pendingFillViewpoint = nil
         startPass(.elevated)
+    }
+
+    // MARK: - Recovery
+
+    func retakeLast() {
+        guard let key = lastCapturedSlotKey else { return }
+        retake(slotKey: key)
+    }
+
+    func retake(slotKey: Int) {
+        let result = CaptureRetakeLogic.retake(
+            slotKey: slotKey,
+            frames: frames,
+            slotKeysInOrder: slotKeysInOrder
+        )
+        frames = result.frames
+        slotKeysInOrder = result.slotKeys
+        capturedSlots = result.capturedSlots
+        capturedKeys = Set(slotKeysInOrder.map { key in
+            let passIdx = key >= 100 ? 1 : 0
+            let slot = key - passIdx * 100
+            return "\(passIdx)-\(slot)"
+        })
+        lastFingerprint = nil
+        lastCapturedSlotKey = slotKeysInOrder.last
+        passComplete = false
+        allComplete = false
+        isAutoArmed = true
+        offerRetake = false
+        lastQualityIssue = nil
+        pendingFillViewpoint = nil
+        lastMessage = "Retake ready — \(nextViewpoint.map { $0.label } ?? "next angle")"
+        holdMessageUntil = Date().addingTimeInterval(1.0)
+        try? persistRecovery(isPaused: isPaused)
+    }
+
+    func pauseCapture() {
+        isPaused = true
+        isAutoArmed = false
+        lastMessage = CaptureTrackingMessages.backgroundedHint()
+        try? persistRecovery(isPaused: true)
+    }
+
+    func resumeCapture() {
+        isPaused = false
+        isAutoArmed = !passComplete && !allComplete
+        lastMessage = nextTargetDirectionHint ?? "Resumed — rotate dish, tap CAPTURE NEXT"
+        holdMessageUntil = Date().addingTimeInterval(0.8)
+    }
+
+    func clearProgress() {
+        frames = []
+        capturedSlots = []
+        capturedKeys = []
+        slotKeysInOrder = []
+        lastFingerprint = nil
+        lastCapturedSlotKey = nil
+        pendingFillViewpoint = nil
+        passComplete = false
+        allComplete = false
+        offerRetake = false
+        lastQualityIssue = nil
+        isPaused = false
+        pass = .horizontal
+        try? CaptureRecoveryStore.shared.clear()
+        lastMessage = "Progress cleared — start Pass 1 when ready"
+    }
+
+    @discardableResult
+    func restoreIfAvailable() -> Bool {
+        guard let snap = try? CaptureRecoveryStore.shared.loadSnapshot() else { return false }
+        let loaded = CaptureRecoveryStore.shared.loadFrames(from: snap)
+        guard CaptureRetakeLogic.pauseSnapshotValid(
+            mode: snap.mode,
+            capturedSlots: Set(snap.capturedSlotKeys),
+            frameCount: loaded.count
+        ) else { return false }
+
+        configure(mode: snap.mode, widthCm: snap.widthCm, objectName: snap.objectName)
+        frames = loaded
+        slotKeysInOrder = snap.frameRecords.map(\.slotKey)
+        capturedSlots = Set(snap.capturedSlotKeys)
+        capturedKeys = Set(slotKeysInOrder.map { key in
+            let passIdx = key >= 100 ? 1 : 0
+            let slot = key - passIdx * 100
+            return "\(passIdx)-\(slot)"
+        })
+        pass = snap.pass
+        isPaused = snap.isPaused
+        passComplete = planner.isPassComplete(pass: pass, capturedSlots: capturedSlots)
+        allComplete = planner.isSessionComplete(capturedSlots: capturedSlots)
+        isAutoArmed = !isPaused && !passComplete && !allComplete
+        lastMessage = CaptureTrackingMessages.sessionInterrupted()
+        return true
+    }
+
+    private func persistRecovery(isPaused: Bool) throws {
+        try CaptureRecoveryStore.shared.save(
+            mode: sequenceMode,
+            pass: pass,
+            capturedSlots: capturedSlots,
+            frames: frames,
+            slotKeysInOrder: slotKeysInOrder,
+            widthCm: widthCm,
+            objectName: objectName,
+            isPaused: isPaused
+        )
     }
 }
 

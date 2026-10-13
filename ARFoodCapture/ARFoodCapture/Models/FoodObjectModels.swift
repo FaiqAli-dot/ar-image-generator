@@ -184,13 +184,13 @@ enum CapturePass: Int, CaseIterable {
             return [
                 "Freeze phone at table / food height — do not walk or spin it",
                 "Rotate only the DISH on the turntable",
-                "Tap CAPTURE NEXT after each ~10° dish turn (primary control)"
+                "Follow the next label (Front, Right, Back…) and tap CAPTURE NEXT"
             ]
         case .elevated:
             return [
                 "Raise ~15 cm + slight look-down once — never a 180° phone flip",
                 "Freeze the phone again; rotate only the dish",
-                "CAPTURE NEXT each step until the ring fills"
+                "CAPTURE NEXT until sectors / ring for this pass are complete"
             ]
         }
     }

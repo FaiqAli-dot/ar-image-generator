@@ -176,6 +176,8 @@ final class CaptureDraftStore: ObservableObject {
     var widthCm: Double = 12
     var name: String = "Food"
     var warnings: [QualityWarning] = []
+    var sequenceMode: CaptureSequenceMode = .adaptiveCoverage
+    var shouldRestoreSession: Bool = false
 }
 
 /// Routes incoming `arfood://` / HTTPS AR URLs into the navigation stack.
