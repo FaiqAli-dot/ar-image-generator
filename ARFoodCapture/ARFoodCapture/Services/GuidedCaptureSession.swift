@@ -356,10 +356,11 @@ final class GuidedCaptureSession: ObservableObject {
             )
 
             // Hard rejects: keep shutter available but do not commit the slot.
+            // Nothing was stored, so do not offer "retake last" — user taps CAPTURE NEXT again.
             if case .reject(let issue) = decision {
                 lastQualityIssue = issue
-                offerRetake = true
-                lastMessage = issue.message
+                offerRetake = false
+                lastMessage = issue.message + " Tap CAPTURE NEXT to try again."
                 holdMessageUntil = Date().addingTimeInterval(2.0)
                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 return
