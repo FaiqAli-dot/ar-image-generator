@@ -7,6 +7,28 @@ struct RawCaptureFrame {
     let elevation: Double
     let distance: Double?
     let capturedAt: Date
+    /// Global slot key (`pass*100 + slot`) for coverage / review integrity.
+    var slotKey: Int
+    /// Soft quality warn from existing checks at capture time; rejects are never stored.
+    var qualityFlag: CaptureQualityIssue?
+
+    init(
+        image: UIImage,
+        azimuth: Double,
+        elevation: Double,
+        distance: Double?,
+        capturedAt: Date,
+        slotKey: Int = -1,
+        qualityFlag: CaptureQualityIssue? = nil
+    ) {
+        self.image = image
+        self.azimuth = azimuth
+        self.elevation = elevation
+        self.distance = distance
+        self.capturedAt = capturedAt
+        self.slotKey = slotKey
+        self.qualityFlag = qualityFlag
+    }
 }
 
 struct ProcessingProgress: Sendable {
@@ -64,16 +86,33 @@ enum ImageProcessingPipeline {
         return (object, images, thumbData)
     }
 
-    static func qualityWarnings(for frames: [RawCaptureFrame]) -> [QualityWarning] {
+    static func qualityWarnings(
+        for frames: [RawCaptureFrame],
+        mode: CaptureSequenceMode = .classic72
+    ) -> [QualityWarning] {
         var warnings: [QualityWarning] = []
-        let expected = CaptureConstants.totalViews
-        if frames.count < expected {
-            warnings.append(QualityWarning(message: "Missing \(expected - frames.count) of \(expected) expected views."))
+        let planner = CaptureCoveragePlanner(mode: mode)
+        let expectedMin = planner.expectedMinimumTotal
+        if frames.count < expectedMin {
+            warnings.append(QualityWarning(message: "Missing \(expectedMin - frames.count) of \(expectedMin) minimum coverage views."))
         }
 
         let azBins = Set(frames.map { Int(($0.azimuth / CaptureConstants.azimuthStepDegrees).rounded()) % 36 })
-        if azBins.count < 30 {
-            warnings.append(QualityWarning(message: "Some angles around the object may be missing."))
+        let sectorBins = Set(azBins.map { $0 / CaptureCoveragePlanner.adaptiveSectorStepSlots })
+        switch mode {
+        case .classic72:
+            if azBins.count < 30 {
+                warnings.append(QualityWarning(message: "Some angles around the object may be missing."))
+            }
+        case .adaptiveCoverage:
+            if sectorBins.count < 8 {
+                warnings.append(QualityWarning(message: "Some coverage sectors around the object may be missing."))
+            }
+        }
+
+        let elevations = Set(frames.map { Int(($0.elevation / 5).rounded()) })
+        if elevations.count < 2 {
+            warnings.append(QualityWarning(message: "Only one elevation band captured — Pass 2 improves top-down AR views."))
         }
 
         let brightness = frames.prefix(12).compactMap { averageLuma($0.image) }
@@ -83,7 +122,7 @@ enum ImageProcessingPipeline {
 
         let far = frames.filter { ($0.distance ?? CaptureConstants.recommendedDistanceMeters) > CaptureConstants.recommendedDistanceMeters + CaptureConstants.distanceToleranceMeters }.count
         let near = frames.filter { ($0.distance ?? CaptureConstants.recommendedDistanceMeters) < CaptureConstants.recommendedDistanceMeters - CaptureConstants.distanceToleranceMeters }.count
-        if far + near > frames.count / 3 {
+        if far + near > max(1, frames.count / 3) {
             warnings.append(QualityWarning(message: "Camera distance drifted often — keep the phone steadier next time."))
         }
         return warnings

@@ -43,6 +43,17 @@
 		EF324C044E4F49B3A1B42BA7 /* DemoBurger in Resources */ = {isa = PBXBuildFile; fileRef = 85F27F1B5EF043A89C731BF3 /* DemoBurger */; };
 		FFF5C57B498E46BF8FA63843 /* PhotographicARView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6ED49E3326496D83CDEA65 /* PhotographicARView.swift */; };
 		B4C8D02F5E3E42B9AF7D2E61 /* ObjectRotationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B7C91E4F2D41A89E6C1D50 /* ObjectRotationProvider.swift */; };
+
+		A10000000000000000000002 /* CaptureCoveragePlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CaptureCoveragePlanner.swift */; };
+		A10000000000000000000004 /* CaptureQualityEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* CaptureQualityEvaluator.swift */; };
+		A10000000000000000000006 /* CaptureRecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* CaptureRecoveryStore.swift */; };
+		A10000000000000000000012 /* CaptureCoveragePlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */; };
+		A10000000000000000000014 /* CaptureQualityAndRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */; };
+
+		A10000000000000000000022 /* CaptureCoverageMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CaptureCoverageMap.swift */; };
+		A10000000000000000000024 /* CoverageMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* CoverageMapView.swift */; };
+		A10000000000000000000026 /* CaptureReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* CaptureReviewView.swift */; };
+		A10000000000000000000028 /* CaptureCoverageMapAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -84,6 +95,18 @@
 		E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
 		F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingPipeline.swift; sourceTree = "<group>"; };
 		F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRemovalService.swift; sourceTree = "<group>"; };
+
+		A10000000000000000000001 /* CaptureCoveragePlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoveragePlanner.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* CaptureQualityEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureQualityEvaluator.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* CaptureRecoveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRecoveryStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoveragePlannerTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureQualityAndRecoveryTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* ARFoodCaptureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ARFoodCaptureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		A10000000000000000000021 /* CaptureCoverageMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoverageMap.swift; sourceTree = "<group>"; };
+		A10000000000000000000023 /* CoverageMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageMapView.swift; sourceTree = "<group>"; };
+		A10000000000000000000025 /* CaptureReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureReviewView.swift; sourceTree = "<group>"; };
+		A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoverageMapAndReviewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,7 +123,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		A10000000000000000000018 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
+
+
+/* Begin PBXContainerItemProxy section */
+		A1000000000000000000001A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BB4717B8D94D4CA3AF08D7DF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C97358F1E1914269B60998FE;
+			remoteInfo = ARFoodCapture;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXGroup section */
 		081F8E769EB145B3B24BCF31 /* Library */ = {
@@ -139,6 +181,8 @@
 			children = (
 				7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */,
 				63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */,
+				A10000000000000000000023 /* CoverageMapView.swift */,
+				A10000000000000000000025 /* CaptureReviewView.swift */,
 				E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */,
 			);
 			path = Capture;
@@ -148,6 +192,7 @@
 			isa = PBXGroup;
 			children = (
 				D552E89345844D6EB18AAD81 /* ARFoodCapture */,
+				A10000000000000000000010 /* ARFoodCaptureTests */,
 				09E1655A04B94B42A0DE5D6F /* Frameworks */,
 				ECC4173AC533452583C71FB3 /* Products */,
 			);
@@ -185,6 +230,10 @@
 				F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */,
 				47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */,
 				3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */,
+				A10000000000000000000021 /* CaptureCoverageMap.swift */,
+				A10000000000000000000001 /* CaptureCoveragePlanner.swift */,
+				A10000000000000000000003 /* CaptureQualityEvaluator.swift */,
+				A10000000000000000000005 /* CaptureRecoveryStore.swift */,
 				F8995E1AF4F5436597DF09E2 /* ImageProcessingPipeline.swift */,
 				82DEE221E8BB4886B5AB3957 /* MotionCaptureGuide.swift */,
 				A3B7C91E4F2D41A89E6C1D50 /* ObjectRotationProvider.swift */,
@@ -223,8 +272,20 @@
 			isa = PBXGroup;
 			children = (
 				774916E821A84FF8B07EA151 /* ARFoodCapture.app */,
+				A10000000000000000000015 /* ARFoodCaptureTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+
+		A10000000000000000000010 /* ARFoodCaptureTests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */,
+				A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */,
+				A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */,
+			);
+			path = ARFoodCaptureTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -247,7 +308,34 @@
 			productReference = 774916E821A84FF8B07EA151 /* ARFoodCapture.app */;
 			productType = "com.apple.product-type.application";
 		};
+
+		A10000000000000000000016 /* ARFoodCaptureTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000000000000000000001D /* Build configuration list for PBXNativeTarget "ARFoodCaptureTests" */;
+			buildPhases = (
+				A10000000000000000000017 /* Sources */,
+				A10000000000000000000018 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000019 /* PBXTargetDependency */,
+			);
+			name = ARFoodCaptureTests;
+			productName = ARFoodCaptureTests;
+			productReference = A10000000000000000000015 /* ARFoodCaptureTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000019 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C97358F1E1914269B60998FE /* ARFoodCapture */;
+			targetProxy = A1000000000000000000001A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		BB4717B8D94D4CA3AF08D7DF /* Project object */ = {
@@ -260,6 +348,11 @@
 					C97358F1E1914269B60998FE = {
 						CreatedOnToolsVersion = 15.0;
 						ProvisioningStyle = Automatic;
+					};
+					A10000000000000000000016 = {
+						CreatedOnToolsVersion = 15.0;
+						ProvisioningStyle = Automatic;
+						TestTargetID = C97358F1E1914269B60998FE;
 					};
 				};
 			};
@@ -277,6 +370,7 @@
 			projectRoot = "";
 			targets = (
 				C97358F1E1914269B60998FE /* ARFoodCapture */,
+				A10000000000000000000016 /* ARFoodCaptureTests */,
 			);
 		};
 /* End PBXProject section */
@@ -311,6 +405,12 @@
 				6402254CB0014EA48A1B24C0 /* BackgroundRemovalService.swift in Sources */,
 				BEC915B427364626B44E60EC /* CameraCaptureController.swift in Sources */,
 				CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */,
+				A10000000000000000000022 /* CaptureCoverageMap.swift in Sources */,
+				A10000000000000000000024 /* CoverageMapView.swift in Sources */,
+				A10000000000000000000026 /* CaptureReviewView.swift in Sources */,
+				A10000000000000000000002 /* CaptureCoveragePlanner.swift in Sources */,
+				A10000000000000000000004 /* CaptureQualityEvaluator.swift in Sources */,
+				A10000000000000000000006 /* CaptureRecoveryStore.swift in Sources */,
 				0081860EB1DE421BB1F51506 /* ImageProcessingPipeline.swift in Sources */,
 				5228D82AEF964D7F965AC5B5 /* MotionCaptureGuide.swift in Sources */,
 				B4C8D02F5E3E42B9AF7D2E61 /* ObjectRotationProvider.swift in Sources */,
@@ -326,6 +426,17 @@
 				CDC62300BDA04A6993EC0B87 /* PhotographicImageProvider.swift in Sources */,
 				5A3E50DDE52E43F99CBAF941 /* QRCodeGenerator.swift in Sources */,
 				99058210BDEE45449B869606 /* UploadObjectView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		A10000000000000000000017 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000012 /* CaptureCoveragePlannerTests.swift in Sources */,
+				A10000000000000000000028 /* CaptureCoverageMapAndReviewTests.swift in Sources */,
+				A10000000000000000000014 /* CaptureQualityAndRecoveryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -428,6 +539,47 @@
 			};
 			name = Release;
 		};
+
+		A1000000000000000000001B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UMGKT8A5ZB;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.faigalee.arfood.capture.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ARFoodCapture.app/ARFoodCapture";
+			};
+			name = Debug;
+		};
+		A1000000000000000000001C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UMGKT8A5ZB;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.faigalee.arfood.capture.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ARFoodCapture.app/ARFoodCapture";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -445,6 +597,16 @@
 			buildConfigurations = (
 				140C6EC606144A8790704A76 /* Debug */,
 				0EA69F595757483296754277 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+
+		A1000000000000000000001D /* Build configuration list for PBXNativeTarget "ARFoodCaptureTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000000000001B /* Debug */,
+				A1000000000000000000001C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -43,16 +43,18 @@ cd backend && npm install && npm start
 
 Deploy guide: [docs/deploy-backend.md](docs/deploy-backend.md).
 
-## How to capture (rotating object — Phase 3)
+## How to capture (rotating object — Phase 3 + guided UX)
 
-Phone stays **stationary**; the food rotates on a **turntable / lazy Susan**. Stored azimuth is **object orientation**, not phone yaw. Phone gyro is never used as the object angle.
+Phone stays **stationary**; the food rotates on a **turntable / lazy Susan**. Stored azimuth is **object orientation**, not phone yaw. Phone gyro is never used as the object angle. Output stays **photographic multi-view** — no 3D reconstruction.
 
 1. Place food on a turntable with even light; prop the phone ~40–50 cm away with the whole dish in frame, then **freeze** the phone.
-2. **Pass 1 (sides):** phone upright at food height. Each step: rotate the **dish** ~10°, tap **CAPTURE NEXT** (primary). Do not walk or spin the phone.
-3. **Pass 2 (slightly above):** raise ~15 cm and tilt down a little **once** (~15°) — never a 180° flip — freeze again, then rotate the dish with CAPTURE NEXT through 360°.
-4. Green frame = phone still enough to shoot. White needle = object angle. Edge arrows say **DISH** ↻/↺.
-5. Optional Vision assist may auto-capture only when the phone is still and Vision is confident. CAPTURE NEXT always works and does not wait on phone yaw.
-6. Vision is **not** fed while the phone is moving (so spinning the phone cannot fake object rotation).
+2. Choose **Adaptive coverage** (8 sectors × 2 heights, fills only when needed) or **Classic 72** (full 36×2 / 10° sequence).
+3. **Pass 1 (sides):** follow the next-angle label (Front, Right, …). Rotate the **dish**, tap **CAPTURE NEXT**. Do not walk or spin the phone.
+4. **Pass 2 (slightly above):** raise ~15 cm and tilt down a little **once** (~15°) — never a 180° flip — freeze again, then rotate the dish through the remaining sectors.
+5. Green frame = phone still enough to shoot. Per-photo blur/lighting/duplicate checks can offer **Retake**. Use ⋯ for pause/resume/clear; progress can restore after leaving the screen.
+6. Optional Vision assist may auto-capture only when the phone is still and Vision is confident. CAPTURE NEXT always works and does not wait on phone yaw.
+
+Research + A/B protocol: [docs/luma-guided-capture-research.md](docs/luma-guided-capture-research.md), [docs/guided-capture-improvements.md](docs/guided-capture-improvements.md).
 
 Elevation coaching is soft only. DEMO BURGER, processing, upload, and photographic AR are unchanged in pipeline; AR billboards are upright + cutout-centered on the placement point.
 
@@ -61,15 +63,17 @@ Elevation coaching is soft only. DEMO BURGER, processing, upload, and photograph
 1. `git checkout` this branch → `open ARFoodCapture/ARFoodCapture.xcodeproj` → run on physical iPhone
 2. **DEMO BURGER** → VIEW IN AR → tap to place: food should be **right-side-up** and sitting on the tap point (not floating offset / inverted)
 3. CAPTURE NEW FOOD → instructions must say phone frozen / dish rotates / CAPTURE NEXT primary
-4. Lazy Susan capture Pass 1: freeze phone, rotate dish, CAPTURE NEXT ×36 — must work **without** spinning the phone
+4. Lazy Susan capture Pass 1: freeze phone, rotate dish, CAPTURE NEXT — must work **without** spinning the phone
 5. Pass 2: small raise + slight tilt only; CAPTURE NEXT still works if tilt is imperfect
 6. Process → place new object in AR: upright + centered like DEMO
-7. Optional: long-press `n / 72` debug — phone yaw must not equal object angle; spinning phone must not advance Vision delta
+7. Optional: long-press progress debug — phone yaw must not equal object angle; spinning phone must not advance Vision delta
+8. Unit tests (Mac): `xcodebuild -scheme ARFoodCapture -destination 'platform=iOS Simulator,name=iPhone 16' test`
 
 ### Honest limitations
 
 - Vision rotation assist is **approximate** and secondary; CAPTURE NEXT is the reliable path.
 - Phone stability is a practical CoreMotion heuristic, not a tripod lock.
+- Quality checks (blur/duplicate) are heuristics — confirm with device A/B before preferring Adaptive over Classic 72.
 - `MotorizedRotationProvider` is a **stub only**.
 - AR upright fix assumes RealityKit samples CG textures with V inverted vs UIKit; cutout bounds are alpha-based and may be soft on heavy transparency.
 - This Linux/cloud agent environment **cannot** run Xcode or a physical iPhone.

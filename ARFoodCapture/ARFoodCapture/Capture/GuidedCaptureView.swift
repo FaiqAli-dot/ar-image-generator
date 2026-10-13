@@ -9,16 +9,95 @@ struct GuidedCaptureView: View {
     @StateObject private var session = GuidedCaptureSession()
     @State private var showPassIntro = true
     @State private var showElevatedIntro = false
-    @State private var showComplete = false
     @State private var warnings: [QualityWarning] = []
     /// Hidden rotation-tuning HUD (long-press progress). Not part of normal UX.
     @State private var showRotationDebug = false
+    @State private var showClearConfirm = false
 
     private var showLiveGuides: Bool {
-        session.isAutoArmed && !showPassIntro && !showElevatedIntro && !showComplete
+        session.isAutoArmed
+            && !session.isPaused
+            && !session.isInReview
+            && !showPassIntro
+            && !showElevatedIntro
     }
 
     var body: some View {
+        ZStack {
+            if session.isInReview {
+                CaptureReviewView(
+                    session: session,
+                    widthCm: widthCm,
+                    objectName: objectName,
+                    onProcess: { processFromReview() },
+                    onRetake: { slotKey in
+                        session.beginRetakeFromReview(slotKey: slotKey)
+                    },
+                    onClose: {
+                        session.pauseCapture()
+                        session.teardown()
+                        path.removeLast()
+                    }
+                )
+            } else {
+                captureCameraLayer
+            }
+        }
+        .navigationBarHidden(true)
+        .task {
+            let mode = CaptureDraftStore.shared.sequenceMode
+            session.configure(mode: mode, widthCm: widthCm, objectName: objectName)
+            await session.prepare()
+            if CaptureDraftStore.shared.shouldRestoreSession, session.restoreIfAvailable() {
+                showPassIntro = false
+                showElevatedIntro = false
+                if session.isInReview || session.allComplete {
+                    warnings = ImageProcessingPipeline.qualityWarnings(
+                        for: session.frames,
+                        mode: session.sequenceMode
+                    )
+                    if session.allComplete && !session.isInReview {
+                        session.enterReview()
+                    }
+                } else if session.passComplete && session.pass == .horizontal {
+                    showElevatedIntro = true
+                }
+            }
+        }
+        .onDisappear {
+            if session.isInReview {
+                try? session.persistForReview()
+            } else {
+                session.pauseCapture()
+            }
+            session.teardown()
+        }
+        .onReceive(Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()) { _ in
+            guard !session.isInReview else { return }
+            session.tickAutoCapture()
+            if session.passComplete && session.pass == .horizontal && !showElevatedIntro {
+                showElevatedIntro = true
+            }
+            if session.allComplete && !session.isInReview {
+                warnings = ImageProcessingPipeline.qualityWarnings(
+                    for: session.frames,
+                    mode: session.sequenceMode
+                )
+                session.enterReview()
+            }
+        }
+        .confirmationDialog("Clear all capture progress?", isPresented: $showClearConfirm) {
+            Button("Clear progress", role: .destructive) {
+                session.clearProgress()
+                showPassIntro = true
+                showElevatedIntro = false
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var captureCameraLayer: some View {
         ZStack {
             CameraPreview(controller: session.camera)
                 .ignoresSafeArea()
@@ -46,9 +125,10 @@ struct GuidedCaptureView: View {
                 .allowsHitTesting(false)
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 HStack {
                     Button {
+                        session.pauseCapture()
                         session.teardown()
                         path.removeLast()
                     } label: {
@@ -65,7 +145,23 @@ struct GuidedCaptureView: View {
                             showRotationDebug.toggle()
                         }
                     Spacer()
-                    Color.clear.frame(width: 36, height: 36)
+                    Menu {
+                        Button(session.isPaused ? "Resume" : "Pause") {
+                            if session.isPaused { session.resumeCapture() } else { session.pauseCapture() }
+                        }
+                        if session.offerRetake || session.capturedCount > 0 {
+                            Button("Retake last photo") { session.retakeLast() }
+                        }
+                        if session.capturedCount > 0 {
+                            Button("Review photos") { session.enterReview() }
+                        }
+                        Button("Clear progress", role: .destructive) { showClearConfirm = true }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -75,53 +171,50 @@ struct GuidedCaptureView: View {
                     .tracking(2)
                     .foregroundStyle(AppTheme.accent)
 
-                CircularCaptureGuide(
-                    capturedSlots: session.capturedSlotsForCurrentPass,
-                    nextTargetSlot: session.nextTargetSlot,
-                    currentAzimuth: session.objectAzimuthDegrees,
-                    targetElevation: session.pass.targetElevationDegrees,
-                    currentElevation: session.motion.elevationDegrees,
-                    needleLabel: "object"
-                )
-                .frame(width: 220, height: 220)
-                .padding(.top, 4)
+                Text(session.sequenceMode.title)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
 
-                ringLegend
-                    .padding(.top, 2)
-
-                if let next = session.nextTargetSlot {
-                    let remain = session.degreesToNextTarget.map { Int(abs($0).rounded()) } ?? (10)
-                    Text("Next dish angle \(next * 10)° · rotate dish ↻ ~\(max(remain, 10))° · then CAPTURE NEXT")
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.75))
+                if let vp = session.nextViewpoint, showLiveGuides {
+                    Text(vp.label)
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 20)
                 }
+
+                CoverageMapView(
+                    snapshot: session.coverageMap(for: session.pass),
+                    currentAzimuth: session.objectAzimuthDegrees,
+                    compact: false,
+                    showLegend: true
+                )
+                .frame(width: 200, height: 230)
+                .padding(.top, 2)
+
+                Text(session.missingSectorsText)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
 
                 Text(session.phoneStabilityLabel)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(session.motion.isPhoneStable ? Color.green.opacity(0.9) : Color.orange.opacity(0.95))
-
-                Text("Phone stays put · only the turntable / dish rotates · never spin the phone")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.45))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    .foregroundStyle(session.motion.isPhoneStable && !session.isPaused ? Color.green.opacity(0.9) : Color.orange.opacity(0.95))
 
                 Text(session.lastMessage)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.92))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .padding(.top, 2)
 
-                Text(session.isCaptureAligned
-                     ? "READY — tap CAPTURE NEXT"
-                     : "Green frame = phone still enough to shoot · tap CAPTURE NEXT each step")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(session.isCaptureAligned ? Color.green.opacity(0.9) : .white.opacity(0.5))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                if showLiveGuides {
+                    Text(CaptureQualityEvaluator.framingInstruction())
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
+                }
 
                 if showRotationDebug {
                     rotationDebugPanel
@@ -129,14 +222,28 @@ struct GuidedCaptureView: View {
 
                 Spacer()
 
+                if session.isPaused {
+                    Button("RESUME") { session.resumeCapture() }
+                        .buttonStyle(PrimaryButtonStyle(filled: true))
+                        .padding(.horizontal, 40)
+                        .padding(.bottom, 12)
+                }
+
                 if showLiveGuides {
+                    if session.offerRetake {
+                        Button("RETAKE LAST") { session.retakeLast() }
+                            .buttonStyle(PrimaryButtonStyle(filled: false))
+                            .padding(.horizontal, 40)
+                            .padding(.bottom, 4)
+                    }
+
                     Button("CAPTURE NEXT") {
                         session.captureNearestManually()
                     }
                     .buttonStyle(PrimaryButtonStyle(filled: true))
                     .padding(.horizontal, 40)
                     .padding(.bottom, 4)
-                    Text("Primary control — works anytime. Rotate dish ~10° between taps. Do not rotate the phone.")
+                    Text("Primary control — rotate dish between taps. Phone stays still.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.45))
                         .multilineTextAlignment(.center)
@@ -156,7 +263,7 @@ struct GuidedCaptureView: View {
                 passOverlay(
                     title: "PASS 1 OF 2 — SIDES",
                     bullets: CapturePass.horizontal.introBullets,
-                    footer: "Do not walk or spin the phone. Rotate the dish; tap CAPTURE NEXT each ~10°.",
+                    footer: "Do not walk or spin the phone. Rotate the dish; follow Front → Left → Back labels.",
                     button: "START"
                 ) {
                     showPassIntro = false
@@ -175,41 +282,23 @@ struct GuidedCaptureView: View {
                     session.beginElevatedPass()
                 }
             }
+        }
+    }
 
-            if showComplete {
-                passOverlay(
-                    title: "72 / 72 CAPTURE COMPLETE",
-                    bullets: warnings.isEmpty
-                        ? ["Ready to process photographic views."]
-                        : warnings.map(\.message),
-                    footer: warnings.isEmpty ? nil : "You can still process — review notes above.",
-                    button: "PROCESS OBJECT"
-                ) {
-                    CaptureDraftStore.shared.frames = session.frames
-                    CaptureDraftStore.shared.widthCm = widthCm
-                    CaptureDraftStore.shared.name = objectName
-                    CaptureDraftStore.shared.warnings = warnings
-                    session.teardown()
-                    path.append(Route.processing(frames: [RawCaptureFrameProxy(id: UUID())], widthCm: widthCm, name: objectName))
-                }
-            }
-        }
-        .navigationBarHidden(true)
-        .task {
-            await session.prepare()
-        }
-        .onDisappear { session.teardown() }
-        .onReceive(Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()) { _ in
-            session.tickAutoCapture()
-            if session.passComplete && session.pass == .horizontal && !showElevatedIntro && !showComplete {
-                showElevatedIntro = true
-            }
-            if session.allComplete && !showComplete {
-                warnings = ImageProcessingPipeline.qualityWarnings(for: session.frames)
-                showComplete = true
-            }
-        }
-        .preferredColorScheme(.dark)
+    private func processFromReview() {
+        guard session.canProceedToProcessing else { return }
+        warnings = ImageProcessingPipeline.qualityWarnings(
+            for: session.frames,
+            mode: session.sequenceMode
+        )
+        CaptureDraftStore.shared.frames = session.frames
+        CaptureDraftStore.shared.widthCm = widthCm
+        CaptureDraftStore.shared.name = objectName
+        CaptureDraftStore.shared.warnings = warnings
+        CaptureDraftStore.shared.sequenceMode = session.sequenceMode
+        try? CaptureRecoveryStore.shared.clear()
+        session.teardown()
+        path.append(Route.processing(frames: [RawCaptureFrameProxy(id: UUID())], widthCm: widthCm, name: objectName))
     }
 
     /// Soft red → orange → yellow → lime → green based on alignment score.
@@ -219,11 +308,11 @@ struct GuidedCaptureView: View {
         }
         let t = max(0, min(1, session.alignmentScore))
         let stops: [(Double, (Double, Double, Double))] = [
-            (0.00, (0.92, 0.22, 0.22)), // red
-            (0.28, (0.95, 0.48, 0.18)), // orange
-            (0.55, (0.95, 0.82, 0.22)), // yellow
-            (0.78, (0.72, 0.92, 0.28)), // lime
-            (1.00, (0.25, 0.88, 0.42))  // green
+            (0.00, (0.92, 0.22, 0.22)),
+            (0.28, (0.95, 0.48, 0.18)),
+            (0.55, (0.95, 0.82, 0.22)),
+            (0.78, (0.72, 0.92, 0.28)),
+            (1.00, (0.25, 0.88, 0.42))
         ]
         for i in 0..<(stops.count - 1) {
             let a = stops[i]
@@ -239,21 +328,6 @@ struct GuidedCaptureView: View {
         return Color(red: 0.25, green: 0.88, blue: 0.42)
     }
 
-    private var ringLegend: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 14) {
-                legendItem(color: AppTheme.accent, label: "Filled = captured")
-                legendItem(color: .white, label: "Needle = object angle")
-            }
-            Text("Rotate the DISH until ticks light up · bright tick = next · phone does not orbit")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.45))
-            Text("Green frame = phone still · tap CAPTURE NEXT (primary)")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.4))
-        }
-    }
-
     private var rotationDebugPanel: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text("ROTATION DEBUG")
@@ -261,8 +335,8 @@ struct GuidedCaptureView: View {
                 .foregroundStyle(AppTheme.accent)
             Text("phone yaw \(String(format: "%.1f", session.motion.phoneYawDegrees))°  pitch→el \(String(format: "%.1f", session.motion.elevationDegrees))°")
             Text("object est \(String(format: "%.1f", session.objectAzimuthDegrees))°  target \( (session.nextTargetSlot ?? 0) * 10 )°")
-            Text("captured \(session.capturedSlotsForCurrentPass.count)/36  stable \(session.motion.isPhoneStable ? "Y" : "N")  motion \(String(format: "%.2f", session.motion.phoneMotionMagnitude))")
-            Text("vision \(session.rotation.trackingQuality.debugLabel)  Δ \(String(format: "%.1f", session.rotation.visionDeltaSinceAnchor))°  ready \(session.isCaptureAligned ? "Y" : "N")")
+            Text("captured \(session.capturedSlotsForCurrentPass.count)  stable \(session.motion.isPhoneStable ? "Y" : "N")  motion \(String(format: "%.2f", session.motion.phoneMotionMagnitude))")
+            Text("vision \(session.rotation.trackingQuality.debugLabel)  mode \(session.sequenceMode.rawValue)")
             Text("src \(session.rotation.sourceDescription)")
                 .lineLimit(2)
         }
@@ -271,17 +345,6 @@ struct GuidedCaptureView: View {
         .padding(10)
         .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal, 20)
-    }
-
-    private func legendItem(color: Color, label: String) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(color)
-                .frame(width: 7, height: 7)
-            Text(label)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.55))
-        }
     }
 
     private func passOverlay(
@@ -432,6 +495,8 @@ struct CircularCaptureGuide: View {
     let currentElevation: Double
     /// Needle represents object orientation (Phase 3), not phone heading.
     var needleLabel: String = "object"
+    /// When true, emphasize 8 coverage sectors over every 10° tick.
+    var sectorMode: Bool = false
 
     var body: some View {
         GeometryReader { geo in
@@ -441,31 +506,60 @@ struct CircularCaptureGuide: View {
             ZStack {
                 Circle()
                     .stroke(Color.white.opacity(0.15), lineWidth: 2)
-                ForEach(0..<36, id: \.self) { i in
-                    let angle = Double(i) * 10 - 90
-                    let rad = angle * .pi / 180
-                    let pt = CGPoint(
-                        x: center.x + CGFloat(cos(rad)) * radius,
-                        y: center.y + CGFloat(sin(rad)) * radius
-                    )
-                    let isCaptured = capturedSlots.contains(i)
-                    let isNext = nextTargetSlot == i && !isCaptured
-                    ZStack {
-                        if isNext {
+
+                if sectorMode {
+                    ForEach(0..<8, id: \.self) { sector in
+                        let slot = sector * CaptureCoveragePlanner.adaptiveSectorStepSlots
+                        let angle = Double(slot) * 10 - 90
+                        let rad = angle * .pi / 180
+                        let pt = CGPoint(
+                            x: center.x + CGFloat(cos(rad)) * radius,
+                            y: center.y + CGFloat(sin(rad)) * radius
+                        )
+                        let isCaptured = capturedSlots.contains(slot)
+                            || capturedSlots.contains(where: {
+                                ($0 / CaptureCoveragePlanner.adaptiveSectorStepSlots) == sector
+                            })
+                        let isNext = nextTargetSlot.map { $0 / CaptureCoveragePlanner.adaptiveSectorStepSlots == sector } ?? false
+                        ZStack {
+                            if isNext {
+                                Circle()
+                                    .stroke(AppTheme.accent, lineWidth: 2)
+                                    .frame(width: 18, height: 18)
+                            }
                             Circle()
-                                .stroke(AppTheme.accent, lineWidth: 2)
-                                .frame(width: 16, height: 16)
+                                .fill(isCaptured ? AppTheme.accent : (isNext ? Color.white : Color.white.opacity(0.25)))
+                                .frame(width: isCaptured || isNext ? 12 : 8, height: isCaptured || isNext ? 12 : 8)
                         }
-                        Circle()
-                            .fill(isCaptured ? AppTheme.accent : (isNext ? Color.white : Color.white.opacity(0.25)))
-                            .frame(
-                                width: isCaptured || isNext ? 10 : 7,
-                                height: isCaptured || isNext ? 10 : 7
-                            )
+                        .position(pt)
                     }
-                    .position(pt)
+                } else {
+                    ForEach(0..<36, id: \.self) { i in
+                        let angle = Double(i) * 10 - 90
+                        let rad = angle * .pi / 180
+                        let pt = CGPoint(
+                            x: center.x + CGFloat(cos(rad)) * radius,
+                            y: center.y + CGFloat(sin(rad)) * radius
+                        )
+                        let isCaptured = capturedSlots.contains(i)
+                        let isNext = nextTargetSlot == i && !isCaptured
+                        ZStack {
+                            if isNext {
+                                Circle()
+                                    .stroke(AppTheme.accent, lineWidth: 2)
+                                    .frame(width: 16, height: 16)
+                            }
+                            Circle()
+                                .fill(isCaptured ? AppTheme.accent : (isNext ? Color.white : Color.white.opacity(0.25)))
+                                .frame(
+                                    width: isCaptured || isNext ? 10 : 7,
+                                    height: isCaptured || isNext ? 10 : 7
+                                )
+                        }
+                        .position(pt)
+                    }
                 }
-                // Object-orientation needle (not phone yaw)
+
                 let camAngle = (currentAzimuth - 90) * .pi / 180
                 Path { path in
                     path.move(to: center)
