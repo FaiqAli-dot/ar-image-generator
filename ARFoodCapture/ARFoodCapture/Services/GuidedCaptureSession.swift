@@ -26,6 +26,10 @@ final class GuidedCaptureSession: ObservableObject {
     @Published var lastQualityIssue: CaptureQualityIssue?
     @Published var offerRetake = false
     @Published var nextViewpointLabel: String = ""
+    @Published var isInReview = false
+    @Published var reviewDiscardWarning: String?
+    /// When set, next capture commits to this slot (review retake) instead of planner next.
+    @Published var pendingRetakeSlotKey: Int?
 
     let camera = CameraCaptureController()
     let motion = MotionCaptureGuide()
@@ -36,7 +40,7 @@ final class GuidedCaptureSession: ObservableObject {
 
     private var planner = CaptureCoveragePlanner(mode: .adaptiveCoverage)
     private var capturedKeys = Set<String>()
-    private var slotKeysInOrder: [Int] = []
+    private(set) var slotKeysInOrder: [Int] = []
     private var cooldownUntil: Date = .distantPast
     /// Suppresses coaching overwrite right after a successful capture flash.
     private var holdMessageUntil: Date = .distantPast
@@ -63,13 +67,53 @@ final class GuidedCaptureSession: ObservableObject {
     }
 
     var missingSectorsText: String {
-        let missing = planner.missingSectorIndices(pass: pass, capturedSlots: capturedSlots)
-        if missing.isEmpty { return "All sectors covered for this pass" }
-        let names = missing.prefix(3).map { idx -> String in
-            let slot = idx * CaptureCoveragePlanner.adaptiveSectorStepSlots
-            return ViewpointGuidance.compassName(azimuth: slot * Int(CaptureConstants.azimuthStepDegrees))
-        }
+        let snap = coverageMap(for: pass)
+        if snap.missingRequiredCount == 0 { return "All required angles covered for this pass" }
+        let names = snap.cells
+            .filter { $0.state == .missing || $0.state == .targeted }
+            .prefix(3)
+            .map { ViewpointGuidance.compassName(azimuth: Int($0.viewpoint.azimuthDegrees)) }
         return "Missing: " + names.joined(separator: ", ")
+    }
+
+    /// Coverage map for the active pass — accepted photos only.
+    func coverageMap(for pass: CapturePass) -> CaptureCoverageMapSnapshot {
+        let target = (pass == self.pass) ? effectiveTargetSlot : nil
+        return CaptureCoverageMapBuilder.snapshot(
+            mode: sequenceMode,
+            pass: pass,
+            acceptedSlotKeys: capturedSlots,
+            targetedSlot: target
+        )
+    }
+
+    var coverageMapsBothPasses: (horizontal: CaptureCoverageMapSnapshot, elevated: CaptureCoverageMapSnapshot) {
+        CaptureCoverageMapBuilder.bothPasses(
+            mode: sequenceMode,
+            acceptedSlotKeys: capturedSlots,
+            activePass: pass,
+            targetedSlot: effectiveTargetSlot
+        )
+    }
+
+    private var effectiveTargetSlot: Int? {
+        if let pending = pendingRetakeSlotKey {
+            let passIdx = pending >= 100 ? 1 : 0
+            if passIdx == pass.rawValue { return pending - passIdx * 100 }
+        }
+        return nextTargetSlot
+    }
+
+    var reviewItems: [CaptureReviewLogic.ReviewItem] {
+        CaptureReviewLogic.orderedItems(
+            mode: sequenceMode,
+            frames: frames,
+            slotKeysInOrder: slotKeysInOrder
+        )
+    }
+
+    var canProceedToProcessing: Bool {
+        CaptureReviewLogic.canProcess(mode: sequenceMode, acceptedSlotKeys: capturedSlots)
     }
 
     /// Object orientation from the rotation provider — never phone yaw.
@@ -86,6 +130,10 @@ final class GuidedCaptureSession: ObservableObject {
 
     /// Next uncaptured planned viewpoint (required before optional fills).
     var nextTargetSlot: Int? {
+        if let pending = pendingRetakeSlotKey {
+            let passIdx = pending >= 100 ? 1 : 0
+            if passIdx == pass.rawValue { return pending - passIdx * 100 }
+        }
         if let fill = pendingFillViewpoint, fill.pass == pass {
             return fill.slot
         }
@@ -93,6 +141,15 @@ final class GuidedCaptureSession: ObservableObject {
     }
 
     var nextViewpoint: CaptureViewpoint? {
+        if let slot = nextTargetSlot {
+            return planner.viewpoints(for: pass).first { $0.slot == slot }
+                ?? CaptureViewpoint(
+                    slot: slot,
+                    pass: pass,
+                    isRequired: true,
+                    label: ViewpointGuidance.label(forSlot: slot, pass: pass)
+                )
+        }
         if let fill = pendingFillViewpoint, fill.pass == pass { return fill }
         return planner.nextViewpoint(pass: pass, capturedSlots: capturedSlots)
     }
@@ -286,7 +343,10 @@ final class GuidedCaptureSession: ObservableObject {
 
     /// Primary capture path: next planned object-orientation slot.
     func captureNearestManually() {
-        guard isAutoArmed, !isBusyPhoto, !passComplete, !isPaused else { return }
+        // Allow retake even if the pass was previously marked complete.
+        let allowRetake = pendingRetakeSlotKey != nil
+        guard isAutoArmed, !isBusyPhoto, !isPaused else { return }
+        guard allowRetake || !passComplete else { return }
         guard let slot = nextTargetSlot else {
             lastMessage = "All planned angles in this pass are captured"
             holdMessageUntil = Date().addingTimeInterval(1.2)
@@ -367,23 +427,30 @@ final class GuidedCaptureSession: ObservableObject {
             }
 
             let azimuth = Double(slot) * CaptureConstants.azimuthStepDegrees
+            let slotKey = slot + pass.rawValue * 100
+            let warnFlag: CaptureQualityIssue? = {
+                if case .warn(let issue) = decision { return issue }
+                return nil
+            }()
             let frame = RawCaptureFrame(
                 image: image,
                 azimuth: azimuth,
                 elevation: elevation,
                 distance: CaptureConstants.recommendedDistanceMeters,
-                capturedAt: Date()
+                capturedAt: Date(),
+                slotKey: slotKey,
+                qualityFlag: warnFlag
             )
             frames.append(frame)
             capturedKeys.insert(key)
-            let slotKey = slot + pass.rawValue * 100
             capturedSlots.insert(slotKey)
             slotKeysInOrder.append(slotKey)
             lastCapturedSlotKey = slotKey
             lastFingerprint = fingerprint
+            pendingRetakeSlotKey = nil
             cooldownUntil = Date().addingTimeInterval(0.35)
 
-            if case .warn(let issue) = decision {
+            if let issue = warnFlag {
                 lastQualityIssue = issue
                 offerRetake = true
                 lastMessage = "Captured \(ViewpointGuidance.label(forSlot: slot, pass: pass)) — \(issue.message)"
@@ -476,14 +543,43 @@ final class GuidedCaptureSession: ObservableObject {
     }
 
     func retake(slotKey: Int) {
-        let result = CaptureRetakeLogic.retake(
+        applyDiscard(slotKey: slotKey, queueRetake: true, enterCapture: true)
+    }
+
+    /// Discard an accepted photo from review (or retake). Updates coverage immediately.
+    @discardableResult
+    func discardAcceptedPhoto(slotKey: Int, queueRetake: Bool = false) -> String? {
+        applyDiscard(slotKey: slotKey, queueRetake: queueRetake, enterCapture: queueRetake)
+    }
+
+    /// Begin review after both passes have required coverage.
+    func enterReview() {
+        isInReview = true
+        isAutoArmed = false
+        isPaused = false
+        if !canProceedToProcessing {
+            reviewDiscardWarning = "Required coverage is incomplete — capture missing angles before processing."
+        } else {
+            reviewDiscardWarning = nil
+        }
+        try? persistRecovery(isPaused: false)
+    }
+
+    /// Leave review to retake a specific viewpoint without restarting the whole session.
+    func beginRetakeFromReview(slotKey: Int) {
+        applyDiscard(slotKey: slotKey, queueRetake: true, enterCapture: true)
+    }
+
+    private func applyDiscard(slotKey: Int, queueRetake: Bool, enterCapture: Bool) {
+        let result = CaptureReviewLogic.afterDiscard(
+            mode: sequenceMode,
             slotKey: slotKey,
             frames: frames,
             slotKeysInOrder: slotKeysInOrder
         )
         frames = result.frames
         slotKeysInOrder = result.slotKeys
-        capturedSlots = result.capturedSlots
+        capturedSlots = result.acceptedSlots
         capturedKeys = Set(slotKeysInOrder.map { key in
             let passIdx = key >= 100 ? 1 : 0
             let slot = key - passIdx * 100
@@ -491,14 +587,34 @@ final class GuidedCaptureSession: ObservableObject {
         })
         lastFingerprint = nil
         lastCapturedSlotKey = slotKeysInOrder.last
-        passComplete = false
-        allComplete = false
-        isAutoArmed = true
+        reviewDiscardWarning = result.warning
+        passComplete = planner.isPassComplete(pass: pass, capturedSlots: capturedSlots)
+        allComplete = planner.isSessionComplete(capturedSlots: capturedSlots)
         offerRetake = false
         lastQualityIssue = nil
         pendingFillViewpoint = nil
-        lastMessage = "Retake ready — \(nextViewpoint.map { $0.label } ?? "next angle")"
-        holdMessageUntil = Date().addingTimeInterval(1.0)
+
+        if queueRetake {
+            pendingRetakeSlotKey = slotKey
+            let passIdx = slotKey >= 100 ? 1 : 0
+            pass = CapturePass(rawValue: passIdx) ?? .horizontal
+        } else {
+            pendingRetakeSlotKey = nil
+        }
+
+        if enterCapture {
+            isInReview = false
+            isPaused = false
+            isAutoArmed = true
+            passComplete = false
+            allComplete = false
+            let label = nextViewpoint?.label ?? "next angle"
+            lastMessage = "Retake — \(label)"
+            holdMessageUntil = Date().addingTimeInterval(1.0)
+        } else {
+            isInReview = true
+            isAutoArmed = false
+        }
         try? persistRecovery(isPaused: isPaused)
     }
 
@@ -507,6 +623,12 @@ final class GuidedCaptureSession: ObservableObject {
         isAutoArmed = false
         lastMessage = CaptureTrackingMessages.backgroundedHint()
         try? persistRecovery(isPaused: true)
+    }
+
+    /// Persist while remaining on the review step (used when leaving the screen mid-review).
+    func persistForReview() throws {
+        isInReview = true
+        try persistRecovery(isPaused: true)
     }
 
     func resumeCapture() {
@@ -524,11 +646,14 @@ final class GuidedCaptureSession: ObservableObject {
         lastFingerprint = nil
         lastCapturedSlotKey = nil
         pendingFillViewpoint = nil
+        pendingRetakeSlotKey = nil
         passComplete = false
         allComplete = false
         offerRetake = false
         lastQualityIssue = nil
         isPaused = false
+        isInReview = false
+        reviewDiscardWarning = nil
         pass = .horizontal
         try? CaptureRecoveryStore.shared.clear()
         lastMessage = "Progress cleared — start Pass 1 when ready"
@@ -555,9 +680,11 @@ final class GuidedCaptureSession: ObservableObject {
         })
         pass = snap.pass
         isPaused = snap.isPaused
+        isInReview = snap.isInReview
+        pendingRetakeSlotKey = snap.pendingRetakeSlotKey
         passComplete = planner.isPassComplete(pass: pass, capturedSlots: capturedSlots)
         allComplete = planner.isSessionComplete(capturedSlots: capturedSlots)
-        isAutoArmed = !isPaused && !passComplete && !allComplete
+        isAutoArmed = !isPaused && !isInReview && !passComplete && !allComplete
         lastMessage = CaptureTrackingMessages.sessionInterrupted()
         return true
     }
@@ -571,7 +698,9 @@ final class GuidedCaptureSession: ObservableObject {
             slotKeysInOrder: slotKeysInOrder,
             widthCm: widthCm,
             objectName: objectName,
-            isPaused: isPaused
+            isPaused: isPaused,
+            isInReview: isInReview,
+            pendingRetakeSlotKey: pendingRetakeSlotKey
         )
     }
 }

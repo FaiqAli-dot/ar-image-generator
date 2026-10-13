@@ -7,6 +7,28 @@ struct RawCaptureFrame {
     let elevation: Double
     let distance: Double?
     let capturedAt: Date
+    /// Global slot key (`pass*100 + slot`) for coverage / review integrity.
+    var slotKey: Int
+    /// Soft quality warn from existing checks at capture time; rejects are never stored.
+    var qualityFlag: CaptureQualityIssue?
+
+    init(
+        image: UIImage,
+        azimuth: Double,
+        elevation: Double,
+        distance: Double?,
+        capturedAt: Date,
+        slotKey: Int = -1,
+        qualityFlag: CaptureQualityIssue? = nil
+    ) {
+        self.image = image
+        self.azimuth = azimuth
+        self.elevation = elevation
+        self.distance = distance
+        self.capturedAt = capturedAt
+        self.slotKey = slotKey
+        self.qualityFlag = qualityFlag
+    }
 }
 
 struct ProcessingProgress: Sendable {

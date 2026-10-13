@@ -89,13 +89,16 @@ final class CaptureRetakeAndPauseTests: XCTestCase {
                     distance: 0.45,
                     capturedAt: Date(timeIntervalSince1970: 1_700_000_000),
                     slotKey: 0,
-                    imageFileName: "recover_000.jpg"
+                    imageFileName: "recover_000.jpg",
+                    qualityFlagRaw: nil
                 )
             ],
             widthCm: 12,
             objectName: "Test Dish",
             savedAt: Date(timeIntervalSince1970: 1_700_000_100),
-            isPaused: true
+            isPaused: true,
+            isInReview: false,
+            pendingRetakeSlotKey: nil
         )
         let data = try JSONEncoder().encode(snap)
         let decoded = try JSONDecoder().decode(CaptureSessionSnapshot.self, from: data)

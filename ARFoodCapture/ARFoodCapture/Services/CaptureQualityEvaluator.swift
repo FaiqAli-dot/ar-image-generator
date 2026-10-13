@@ -23,7 +23,7 @@ enum CaptureQualityDecision: Equatable {
     }
 }
 
-enum CaptureQualityIssue: String, Equatable {
+enum CaptureQualityIssue: String, Codable, Equatable {
     case blurry
     case tooDark
     case tooBright

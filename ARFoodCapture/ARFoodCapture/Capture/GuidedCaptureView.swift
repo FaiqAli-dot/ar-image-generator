@@ -9,17 +9,95 @@ struct GuidedCaptureView: View {
     @StateObject private var session = GuidedCaptureSession()
     @State private var showPassIntro = true
     @State private var showElevatedIntro = false
-    @State private var showComplete = false
     @State private var warnings: [QualityWarning] = []
     /// Hidden rotation-tuning HUD (long-press progress). Not part of normal UX.
     @State private var showRotationDebug = false
     @State private var showClearConfirm = false
 
     private var showLiveGuides: Bool {
-        session.isAutoArmed && !session.isPaused && !showPassIntro && !showElevatedIntro && !showComplete
+        session.isAutoArmed
+            && !session.isPaused
+            && !session.isInReview
+            && !showPassIntro
+            && !showElevatedIntro
     }
 
     var body: some View {
+        ZStack {
+            if session.isInReview {
+                CaptureReviewView(
+                    session: session,
+                    widthCm: widthCm,
+                    objectName: objectName,
+                    onProcess: { processFromReview() },
+                    onRetake: { slotKey in
+                        session.beginRetakeFromReview(slotKey: slotKey)
+                    },
+                    onClose: {
+                        session.pauseCapture()
+                        session.teardown()
+                        path.removeLast()
+                    }
+                )
+            } else {
+                captureCameraLayer
+            }
+        }
+        .navigationBarHidden(true)
+        .task {
+            let mode = CaptureDraftStore.shared.sequenceMode
+            session.configure(mode: mode, widthCm: widthCm, objectName: objectName)
+            await session.prepare()
+            if CaptureDraftStore.shared.shouldRestoreSession, session.restoreIfAvailable() {
+                showPassIntro = false
+                showElevatedIntro = false
+                if session.isInReview || session.allComplete {
+                    warnings = ImageProcessingPipeline.qualityWarnings(
+                        for: session.frames,
+                        mode: session.sequenceMode
+                    )
+                    if session.allComplete && !session.isInReview {
+                        session.enterReview()
+                    }
+                } else if session.passComplete && session.pass == .horizontal {
+                    showElevatedIntro = true
+                }
+            }
+        }
+        .onDisappear {
+            if session.isInReview {
+                try? session.persistForReview()
+            } else {
+                session.pauseCapture()
+            }
+            session.teardown()
+        }
+        .onReceive(Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()) { _ in
+            guard !session.isInReview else { return }
+            session.tickAutoCapture()
+            if session.passComplete && session.pass == .horizontal && !showElevatedIntro {
+                showElevatedIntro = true
+            }
+            if session.allComplete && !session.isInReview {
+                warnings = ImageProcessingPipeline.qualityWarnings(
+                    for: session.frames,
+                    mode: session.sequenceMode
+                )
+                session.enterReview()
+            }
+        }
+        .confirmationDialog("Clear all capture progress?", isPresented: $showClearConfirm) {
+            Button("Clear progress", role: .destructive) {
+                session.clearProgress()
+                showPassIntro = true
+                showElevatedIntro = false
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var captureCameraLayer: some View {
         ZStack {
             CameraPreview(controller: session.camera)
                 .ignoresSafeArea()
@@ -74,6 +152,9 @@ struct GuidedCaptureView: View {
                         if session.offerRetake || session.capturedCount > 0 {
                             Button("Retake last photo") { session.retakeLast() }
                         }
+                        if session.capturedCount > 0 {
+                            Button("Review photos") { session.enterReview() }
+                        }
                         Button("Clear progress", role: .destructive) { showClearConfirm = true }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -94,7 +175,6 @@ struct GuidedCaptureView: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.45))
 
-                // Next useful photo — primary coaching signal (Luma-inspired clarity).
                 if let vp = session.nextViewpoint, showLiveGuides {
                     Text(vp.label)
                         .font(.system(size: 22, weight: .heavy, design: .rounded))
@@ -103,16 +183,13 @@ struct GuidedCaptureView: View {
                         .padding(.horizontal, 20)
                 }
 
-                CircularCaptureGuide(
-                    capturedSlots: session.capturedSlotsForCurrentPass,
-                    nextTargetSlot: session.nextTargetSlot,
+                CoverageMapView(
+                    snapshot: session.coverageMap(for: session.pass),
                     currentAzimuth: session.objectAzimuthDegrees,
-                    targetElevation: session.pass.targetElevationDegrees,
-                    currentElevation: session.motion.elevationDegrees,
-                    needleLabel: "object",
-                    sectorMode: session.sequenceMode == .adaptiveCoverage
+                    compact: false,
+                    showLegend: true
                 )
-                .frame(width: 200, height: 200)
+                .frame(width: 200, height: 230)
                 .padding(.top, 2)
 
                 Text(session.missingSectorsText)
@@ -131,7 +208,6 @@ struct GuidedCaptureView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
 
-                // Soft framing reminder — not a fake precision meter.
                 if showLiveGuides {
                     Text(CaptureQualityEvaluator.framingInstruction())
                         .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -206,78 +282,23 @@ struct GuidedCaptureView: View {
                     session.beginElevatedPass()
                 }
             }
+        }
+    }
 
-            if showComplete {
-                passOverlay(
-                    title: session.sequenceMode == .classic72
-                        ? "72 / 72 CAPTURE COMPLETE"
-                        : "COVERAGE COMPLETE",
-                    bullets: warnings.isEmpty
-                        ? ["\(session.capturedCount) photographic views ready to process."]
-                        : warnings.map(\.message),
-                    footer: warnings.isEmpty ? nil : "You can still process — review notes above.",
-                    button: "PROCESS OBJECT"
-                ) {
-                    CaptureDraftStore.shared.frames = session.frames
-                    CaptureDraftStore.shared.widthCm = widthCm
-                    CaptureDraftStore.shared.name = objectName
-                    CaptureDraftStore.shared.warnings = warnings
-                    try? CaptureRecoveryStore.shared.clear()
-                    session.teardown()
-                    path.append(Route.processing(frames: [RawCaptureFrameProxy(id: UUID())], widthCm: widthCm, name: objectName))
-                }
-            }
-        }
-        .navigationBarHidden(true)
-        .task {
-            let mode = CaptureDraftStore.shared.sequenceMode
-            session.configure(mode: mode, widthCm: widthCm, objectName: objectName)
-            await session.prepare()
-            if CaptureDraftStore.shared.shouldRestoreSession, session.restoreIfAvailable() {
-                showPassIntro = false
-                showElevatedIntro = false
-                if session.allComplete {
-                    warnings = ImageProcessingPipeline.qualityWarnings(
-                        for: session.frames,
-                        mode: session.sequenceMode
-                    )
-                    showComplete = true
-                } else if session.pass == .elevated && session.passComplete == false {
-                    // Resume mid elevated pass
-                } else if session.passComplete && session.pass == .horizontal {
-                    showElevatedIntro = true
-                }
-            }
-        }
-        .onDisappear {
-            if !showComplete {
-                session.pauseCapture()
-            }
-            session.teardown()
-        }
-        .onReceive(Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()) { _ in
-            session.tickAutoCapture()
-            if session.passComplete && session.pass == .horizontal && !showElevatedIntro && !showComplete {
-                showElevatedIntro = true
-            }
-            if session.allComplete && !showComplete {
-                warnings = ImageProcessingPipeline.qualityWarnings(
-                    for: session.frames,
-                    mode: session.sequenceMode
-                )
-                showComplete = true
-            }
-        }
-        .confirmationDialog("Clear all capture progress?", isPresented: $showClearConfirm) {
-            Button("Clear progress", role: .destructive) {
-                session.clearProgress()
-                showPassIntro = true
-                showElevatedIntro = false
-                showComplete = false
-            }
-            Button("Cancel", role: .cancel) {}
-        }
-        .preferredColorScheme(.dark)
+    private func processFromReview() {
+        guard session.canProceedToProcessing else { return }
+        warnings = ImageProcessingPipeline.qualityWarnings(
+            for: session.frames,
+            mode: session.sequenceMode
+        )
+        CaptureDraftStore.shared.frames = session.frames
+        CaptureDraftStore.shared.widthCm = widthCm
+        CaptureDraftStore.shared.name = objectName
+        CaptureDraftStore.shared.warnings = warnings
+        CaptureDraftStore.shared.sequenceMode = session.sequenceMode
+        try? CaptureRecoveryStore.shared.clear()
+        session.teardown()
+        path.append(Route.processing(frames: [RawCaptureFrameProxy(id: UUID())], widthCm: widthCm, name: objectName))
     }
 
     /// Soft red → orange → yellow → lime → green based on alignment score.

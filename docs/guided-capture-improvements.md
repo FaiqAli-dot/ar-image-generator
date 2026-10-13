@@ -209,3 +209,18 @@ Compare current PR #6 flow (named next viewpoint, sector adaptive + classic 72, 
 4. **Do not add:** 3D reconstruction modes, walk-around loop projection, photogrammetry “50–60 photo” quotas, or fake distance precision.
 
 No device testing of KIRI or Luma was performed for this write-up; recommendations are principle-level only.
+
+---
+
+## 10. Step 2 implementation (coverage map + photo review)
+
+Shipped on this branch after the KIRI research recommendation:
+
+| Feature | Behavior |
+| --- | --- |
+| Coverage map | `CoverageMapView` + `CaptureCoverageMapBuilder` — completed / missing / targeted from **accepted** slot keys only; independent maps per elevation pass; adaptive 8 sectors or classic 36 slots |
+| Photo review | `CaptureReviewView` after both passes — thumbnails in angle order, quality **FLAG** only when capture-time warn exists, discard / discard+retake, process **disabled** until required coverage complete |
+| Data model | `RawCaptureFrame.slotKey` + `qualityFlag`; recovery snapshot stores `isInReview`, `pendingRetakeSlotKey`, `qualityFlagRaw` |
+| Tests | `CaptureCoverageMapAndReviewTests` (+ existing planner/quality tests) |
+
+**Not claimed:** Xcode build/test on this Linux host; device UI QA.

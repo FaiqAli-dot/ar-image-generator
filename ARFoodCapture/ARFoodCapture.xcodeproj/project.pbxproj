@@ -49,6 +49,11 @@
 		A10000000000000000000006 /* CaptureRecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* CaptureRecoveryStore.swift */; };
 		A10000000000000000000012 /* CaptureCoveragePlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */; };
 		A10000000000000000000014 /* CaptureQualityAndRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */; };
+
+		A10000000000000000000022 /* CaptureCoverageMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* CaptureCoverageMap.swift */; };
+		A10000000000000000000024 /* CoverageMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* CoverageMapView.swift */; };
+		A10000000000000000000026 /* CaptureReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* CaptureReviewView.swift */; };
+		A10000000000000000000028 /* CaptureCoverageMapAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -97,6 +102,11 @@
 		A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoveragePlannerTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureQualityAndRecoveryTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000015 /* ARFoodCaptureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ARFoodCaptureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		A10000000000000000000021 /* CaptureCoverageMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoverageMap.swift; sourceTree = "<group>"; };
+		A10000000000000000000023 /* CoverageMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageMapView.swift; sourceTree = "<group>"; };
+		A10000000000000000000025 /* CaptureReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureReviewView.swift; sourceTree = "<group>"; };
+		A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoverageMapAndReviewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -171,6 +181,8 @@
 			children = (
 				7A1B70B3A39D4BF49FECE295 /* CaptureInstructionsView.swift */,
 				63E3C1ED24DB49FF963AE0D3 /* GuidedCaptureView.swift */,
+				A10000000000000000000023 /* CoverageMapView.swift */,
+				A10000000000000000000025 /* CaptureReviewView.swift */,
 				E4F4CFD6971F44C0A7FD1B3E /* ProcessingView.swift */,
 			);
 			path = Capture;
@@ -218,6 +230,7 @@
 				F934F2BE838F49738537C084 /* BackgroundRemovalService.swift */,
 				47C98B58BCAA4FDE92966AB2 /* CameraCaptureController.swift */,
 				3410714257F74C229FD826B7 /* GuidedCaptureSession.swift */,
+				A10000000000000000000021 /* CaptureCoverageMap.swift */,
 				A10000000000000000000001 /* CaptureCoveragePlanner.swift */,
 				A10000000000000000000003 /* CaptureQualityEvaluator.swift */,
 				A10000000000000000000005 /* CaptureRecoveryStore.swift */,
@@ -269,6 +282,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000011 /* CaptureCoveragePlannerTests.swift */,
+				A10000000000000000000027 /* CaptureCoverageMapAndReviewTests.swift */,
 				A10000000000000000000013 /* CaptureQualityAndRecoveryTests.swift */,
 			);
 			path = ARFoodCaptureTests;
@@ -391,6 +405,9 @@
 				6402254CB0014EA48A1B24C0 /* BackgroundRemovalService.swift in Sources */,
 				BEC915B427364626B44E60EC /* CameraCaptureController.swift in Sources */,
 				CB7AEEC7B2F34CC7B69AB62C /* GuidedCaptureSession.swift in Sources */,
+				A10000000000000000000022 /* CaptureCoverageMap.swift in Sources */,
+				A10000000000000000000024 /* CoverageMapView.swift in Sources */,
+				A10000000000000000000026 /* CaptureReviewView.swift in Sources */,
 				A10000000000000000000002 /* CaptureCoveragePlanner.swift in Sources */,
 				A10000000000000000000004 /* CaptureQualityEvaluator.swift in Sources */,
 				A10000000000000000000006 /* CaptureRecoveryStore.swift in Sources */,
@@ -418,6 +435,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000012 /* CaptureCoveragePlannerTests.swift in Sources */,
+				A10000000000000000000028 /* CaptureCoverageMapAndReviewTests.swift in Sources */,
 				A10000000000000000000014 /* CaptureQualityAndRecoveryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
