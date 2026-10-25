@@ -12,6 +12,10 @@ export const config = {
   objectsDir: process.env.OBJECTS_DIR || path.join(root, "data", "objects"),
   /** Max bytes per uploaded image (default 8 MB). */
   maxImageBytes: Number(process.env.MAX_IMAGE_BYTES || 8 * 1024 * 1024),
+  /** Max GLB upload (default 80 MB — Luma high-poly exports can be ~40 MB). */
+  maxGlbBytes: Number(process.env.MAX_GLB_BYTES || 80 * 1024 * 1024),
+  /** Synthetic render resolution (square). 512 justified for mobile billboards. */
+  renderRes: Number(process.env.RENDER_RES || 512),
   /** Max total views per object. */
   maxViews: Number(process.env.MAX_VIEWS || 120),
   /** Max request body / multipart field count. */

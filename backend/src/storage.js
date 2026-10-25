@@ -70,6 +70,26 @@ export function thumbnailPath(id) {
   return path.join(objectDir(id), "thumbnail", "thumb.png");
 }
 
+export function modelPath(id, filename) {
+  const allowed = new Set([
+    "original.glb",
+    "optimized.glb",
+    "optimized-mobile.glb",
+    "model.usdz",
+  ]);
+  if (!allowed.has(filename)) return null;
+  return path.join(objectDir(id), "models", filename);
+}
+
+export function renderImagePath(id, setKey, filename) {
+  const safeSet = setKey === "16" || setKey === "72" ? setKey : null;
+  const safe = sanitizeImageFilename(filename);
+  if (!safeSet || !safe) return null;
+  return path.join(objectDir(id), "renders", `views_${safeSet}`, safe);
+}
+
+export { objectDir };
+
 /**
  * Build permanent public URLs for an object.
  * @param {string} id

@@ -1,19 +1,30 @@
-# AR Food Object API (Phase 2)
+# AR Food Object API (Phase 2 + GLB import)
 
 Node/Express REST API that persists **real transparent photographic views** + metadata and returns a permanent `arUrl` for QR / remote AR.
 
-This is the Phase 2 product backend. The sibling [`optional-backend/`](../optional-backend/) remains the optional **rembg** background-removal helper only.
+**GLB dual-output** adds: owner import UI, gltf-transform optimization, browser `<model-viewer>` menu, optional AR hooks, and synthetic 16/72-view renders from the same GLB. Photo upload path is unchanged.
+
+Docs: [`docs/glb-import-and-browser-3d.md`](../docs/glb-import-and-browser-3d.md).
+
+This is the product backend. The sibling [`optional-backend/`](../optional-backend/) remains the optional **rembg** background-removal helper only.
 
 ## Endpoints
 
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/health` | Liveness |
+| `GET` | `/owner` | Owner GLB import / publish UI |
 | `POST` | `/api/objects` | Multipart upload (`metadata` JSON + `images` PNGs + optional `thumbnail`) |
 | `GET` | `/api/objects/:id` | Object metadata (FoodObject-compatible) + URLs |
 | `GET` | `/api/objects/:id/images/:filename` | Transparent view PNG |
 | `GET` | `/api/objects/:id/thumbnail` | Thumbnail PNG |
-| `GET` | `/ar/:id` | Permanent customer AR landing page (deep-links into the iOS app) |
+| `GET` | `/api/objects/:id/model/:variant` | `original` / `optimized` / `optimized-mobile` GLB |
+| `GET` | `/api/objects/:id/renders/:16\|72/:file` | Synthetic view PNG or `manifest.json` |
+| `POST` | `/api/glb/import` | Upload + validate GLB → draft |
+| `POST` | `/api/glb/drafts/:id/process` | Optimize + render 16/72 (cached) |
+| `POST` | `/api/glb/drafts/:id/publish` | Persist hybrid object |
+| `GET` | `/ar/:id` | Customer menu (model-viewer and/or photo spin + deep link) |
+| `GET` | `/dev/compare/:id` | Dev dual-output comparison UI |
 | `GET` | `/capture` | Capture QR landing → `arfood://capture` |
 
 ### `POST /api/objects` metadata JSON
@@ -56,7 +67,10 @@ npm test
 | `PORT` | `3000` | Listen port |
 | `PUBLIC_BASE_URL` | _(from request host)_ | Canonical HTTPS origin for permanent `arUrl` (set this in production) |
 | `DATA_DIR` / `OBJECTS_DIR` | `./data` | Filesystem object store |
-| `MAX_IMAGE_BYTES` | `8388608` | Per-file limit |
+| `MAX_IMAGE_BYTES` | `8388608` | Per-file image limit |
+| `MAX_GLB_BYTES` | `83886080` | Max GLB upload (~80 MB) |
+| `RENDER_RES` | `512` | Synthetic view square resolution |
+| `BLENDER` | _(unset)_ | Optional Blender 4.2+ binary; else Playwright/three.js |
 | `MAX_VIEWS` | `120` | Max views per object |
 
 ## Deploy (Render example)

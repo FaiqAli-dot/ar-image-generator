@@ -8,34 +8,52 @@ import {
   buildObjectRecord,
   imagePath,
   isValidObjectId,
+  modelPath,
   newObjectId,
   objectExists,
   publicUrls,
   readObject,
+  renderImagePath,
   resolveBaseUrl,
   sanitizeImageFilename,
   thumbnailPath,
   writeObjectMeta,
 } from "./storage.js";
+import {
+  createImportDraft,
+  processDraft,
+  publishDraft,
+  readDraft,
+  discardDraft,
+  ensureGlbDirs,
+} from "./glb/pipeline.js";
+import { looksLikeGlb } from "./glb/validate.js";
+import { menuHtml } from "./pages/menuHtml.js";
+import { ownerHtml } from "./pages/ownerHtml.js";
+import { compareHtml } from "./pages/compareHtml.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: config.maxImageBytes,
+    fileSize: Math.max(config.maxImageBytes, config.maxGlbBytes),
     files: config.maxFiles,
   },
   fileFilter(_req, file, cb) {
+    if (file.fieldname === "glb" || file.fieldname === "model") {
+      cb(null, true);
+      return;
+    }
     const name = sanitizeImageFilename(file.originalname) || sanitizeImageFilename(file.fieldname);
     const okType =
       !file.mimetype ||
       file.mimetype === "image/png" ||
       file.mimetype === "application/octet-stream" ||
-      file.mimetype === "image/jpeg";
+      file.mimetype === "image/jpeg" ||
+      file.mimetype === "model/gltf-binary";
     if (!okType) {
-      cb(new Error("Only PNG/JPEG image uploads are allowed"));
+      cb(new Error("Only PNG/JPEG image or GLB uploads are allowed"));
       return;
     }
-    // thumbnail field may use any safe name; views must be .png eventually
     if (file.fieldname === "thumbnail" || name) {
       cb(null, true);
       return;
@@ -49,7 +67,7 @@ export function createApp() {
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
     if (req.method === "OPTIONS") {
       res.status(204).end();
@@ -57,10 +75,21 @@ export function createApp() {
     }
     next();
   });
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "2mb" }));
 
   app.get("/health", (_req, res) => {
-    res.json({ ok: true, service: "ar-food-object-api", version: "2.0.0" });
+    res.json({
+      ok: true,
+      service: "ar-food-object-api",
+      version: "3.0.0",
+      features: ["photographic", "glb-import", "model-viewer-menu", "dual-output"],
+    });
+  });
+
+  /** Owner UI (was missing — added in backend web app). */
+  app.get(["/owner", "/owner/"], (req, res) => {
+    const base = resolveBaseUrl(req);
+    res.type("html").send(ownerHtml({ base }));
   });
 
   /** Capture QR minimum path — opens CAPTURE NEW FOOD via deep link. */
@@ -70,14 +99,17 @@ export function createApp() {
       res.json({ deepLink, path: "capture" });
       return;
     }
-    res.type("html").send(landingHtml({
-      title: "Capture New Food",
-      subtitle: "Open AR Food Capture to photograph a dish.",
-      deepLink,
-      buttonLabel: "Open Capture",
-    }));
+    res.type("html").send(
+      landingHtml({
+        title: "Capture New Food",
+        subtitle: "Open AR Food Capture to photograph a dish.",
+        deepLink,
+        buttonLabel: "Open Capture",
+      })
+    );
   });
 
+  /** Customer QR menu — browser 3D when model present; else deep-link / photo. */
   app.get("/ar/:id", async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
@@ -97,19 +129,37 @@ export function createApp() {
         name: obj.name,
         widthCm: obj.widthCm,
         viewCount: obj.viewCount,
+        kind: obj.kind,
+        publishedDefault: obj.publishedDefault || null,
+        hasModel3d: Boolean(obj.model3d),
         arUrl: urls.arUrl,
         apiUrl: urls.apiUrl,
         deepLink: urls.deepLink,
       });
       return;
     }
-    res.type("html").send(landingHtml({
-      title: obj.name,
-      subtitle: `${obj.viewCount} photographic views · ${obj.widthCm} cm — open in AR Food to place on a table.`,
-      deepLink: urls.deepLink,
-      buttonLabel: "View in AR",
-      metaUrl: urls.apiUrl,
-    }));
+    // Hybrid / model objects get the menu viewer; pure photographic keep enhanced menu with photo spin + deep link.
+    res.type("html").send(menuHtml({ obj, urls, base }));
+  });
+
+  /** Dev-only dual-output comparison UI. */
+  app.get("/dev/compare/:id", async (req, res) => {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      res.status(400).json({ error: "Invalid object id" });
+      return;
+    }
+    const obj = await readObject(id);
+    if (!obj) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+    if (!obj.model3d) {
+      res.status(400).type("html").send("<p>Object has no GLB dual-output assets. Import via /owner first.</p>");
+      return;
+    }
+    const base = resolveBaseUrl(req);
+    res.type("html").send(compareHtml({ obj, base }));
   });
 
   app.get("/api/objects/:id", async (req, res) => {
@@ -132,6 +182,8 @@ export function createApp() {
       deepLink: urls.deepLink,
       imageBaseUrl: `${base}/api/objects/${id}/images`,
       thumbnailUrl: `${base}/api/objects/${id}/thumbnail`,
+      modelBaseUrl: obj.model3d ? `${base}/api/objects/${id}/model` : undefined,
+      compareUrl: obj.model3d ? `${base}/dev/compare/${id}` : undefined,
     });
   });
 
@@ -165,6 +217,178 @@ export function createApp() {
     res.sendFile(path.resolve(file));
   });
 
+  app.get("/api/objects/:id/model/:variant", async (req, res) => {
+    const { id, variant } = req.params;
+    if (!isValidObjectId(id)) {
+      res.status(400).json({ error: "Invalid object id" });
+      return;
+    }
+    const map = {
+      original: "original.glb",
+      "original.glb": "original.glb",
+      optimized: "optimized.glb",
+      "optimized.glb": "optimized.glb",
+      "optimized-mobile": "optimized-mobile.glb",
+      "optimized-mobile.glb": "optimized-mobile.glb",
+      mobile: "optimized-mobile.glb",
+      usdz: "model.usdz",
+      "model.usdz": "model.usdz",
+    };
+    const filename = map[variant];
+    if (!filename) {
+      res.status(400).json({ error: "Unknown model variant" });
+      return;
+    }
+    const file = modelPath(id, filename);
+    if (!file || !fs.existsSync(file)) {
+      res.status(404).json({
+        error: "Model asset not found",
+        note:
+          filename.endsWith(".usdz")
+            ? "Server-side USDZ is not generated on Linux; use model-viewer Quick Look client conversion when available."
+            : undefined,
+      });
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader(
+      "Content-Type",
+      filename.endsWith(".usdz") ? "model/vnd.usdz+zip" : "model/gltf-binary"
+    );
+    res.sendFile(path.resolve(file));
+  });
+
+  app.get("/api/objects/:id/renders/:setKey/:filename", async (req, res) => {
+    const { id, setKey, filename } = req.params;
+    if (!isValidObjectId(id)) {
+      res.status(400).json({ error: "Invalid object id" });
+      return;
+    }
+    if (filename === "manifest.json") {
+      const file = path.join(
+        config.objectsDir,
+        id,
+        "renders",
+        `views_${setKey}`,
+        "manifest.json"
+      );
+      if (!fs.existsSync(file)) {
+        res.status(404).json({ error: "Manifest not found" });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.sendFile(path.resolve(file));
+      return;
+    }
+    const file = renderImagePath(id, setKey, filename);
+    if (!file || !fs.existsSync(file)) {
+      res.status(404).json({ error: "Render image not found" });
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.sendFile(path.resolve(file));
+  });
+
+  // —— GLB import API ——
+  app.post("/api/glb/import", (req, res, next) => {
+    upload.single("glb")(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ error: err.message || "Upload failed" });
+        return;
+      }
+      next();
+    });
+  }, async (req, res) => {
+    try {
+      await ensureGlbDirs();
+      const file = req.file;
+      if (!file?.buffer?.length) {
+        res.status(400).json({ error: "Missing glb file field" });
+        return;
+      }
+      if (!looksLikeGlb(file.buffer)) {
+        res.status(400).json({
+          error: "File is not a GLB (bad magic). Export Binary glTF (.glb).",
+          code: "BAD_MAGIC",
+        });
+        return;
+      }
+      const draft = await createImportDraft(file.buffer, {
+        name: req.body?.name,
+        widthCm: req.body?.widthCm,
+        description: req.body?.description,
+      });
+      res.status(201).json(draft);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || "Import failed", code: err.code });
+    }
+  });
+
+  app.get("/api/glb/drafts/:draftId", async (req, res) => {
+    const draft = await readDraft(req.params.draftId);
+    if (!draft) {
+      res.status(404).json({ error: "Draft not found" });
+      return;
+    }
+    res.json(draft);
+  });
+
+  app.get("/api/glb/drafts/:draftId/:file", async (req, res) => {
+    const allowed = new Set(["original.glb", "optimized.glb", "optimized-mobile.glb"]);
+    if (!allowed.has(req.params.file)) {
+      res.status(400).json({ error: "Invalid draft file" });
+      return;
+    }
+    const file = path.join(config.dataDir, "glb-drafts", req.params.draftId, req.params.file);
+    if (!fs.existsSync(file)) {
+      res.status(404).json({ error: "File not found" });
+      return;
+    }
+    res.setHeader("Content-Type", "model/gltf-binary");
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(path.resolve(file));
+  });
+
+  app.post("/api/glb/drafts/:draftId/process", async (req, res) => {
+    try {
+      const draft = await processDraft(req.params.draftId, {
+        acceptedSuggestionIds: req.body?.acceptedSuggestionIds || [],
+        skipRenders: Boolean(req.body?.skipRenders),
+      });
+      res.json(draft);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || "Process failed" });
+    }
+  });
+
+  app.post("/api/glb/drafts/:draftId/publish", async (req, res) => {
+    try {
+      const record = await publishDraft(req.params.draftId, {
+        publishedDefault: req.body?.publishedDefault,
+        name: req.body?.name,
+        widthCm: req.body?.widthCm,
+        description: req.body?.description,
+      });
+      const base = resolveBaseUrl(req);
+      const urls = publicUrls(record.id, base);
+      res.status(201).json({
+        ...record,
+        arUrl: urls.arUrl,
+        apiUrl: urls.apiUrl,
+        deepLink: urls.deepLink,
+        compareUrl: `${base}/dev/compare/${record.id}`,
+      });
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || "Publish failed" });
+    }
+  });
+
+  app.delete("/api/glb/drafts/:draftId", async (req, res) => {
+    await discardDraft(req.params.draftId);
+    res.status(204).end();
+  });
+
+  // —— Existing photographic create (preserved) ——
   app.post(
     "/api/objects",
     (req, res, next) => {
@@ -243,7 +467,6 @@ async function handleCreateObject(req) {
   const imageFiles = files.filter((f) => f.fieldname === "images" || f.fieldname.startsWith("image"));
   const thumbFile = files.find((f) => f.fieldname === "thumbnail");
 
-  // Also accept files keyed by filename
   const byName = new Map();
   for (const f of files) {
     const safe = sanitizeImageFilename(f.originalname) || sanitizeImageFilename(f.fieldname);
@@ -308,7 +531,6 @@ async function handleCreateObject(req) {
   if (thumbFile?.buffer?.length) {
     await fsp.writeFile(thumbnailPath(id), thumbFile.buffer);
   } else {
-    // Use first view as thumbnail fallback
     const first = record.views[0];
     const src = imagePath(id, first.image);
     await fsp.copyFile(src, thumbnailPath(id));
@@ -386,11 +608,10 @@ function landingHtml({ title, subtitle, deepLink, buttonLabel, metaUrl }) {
     <h1>${safeTitle}</h1>
     <p>${safeSub}</p>
     <a class="btn" href="${safeLink}">${safeBtn}</a>
-    <p class="hint">Requires the AR Food iPhone app. Photographic multi-view AR — not a 3D mesh.</p>
+    <p class="hint">Requires the AR Food iPhone app for native photographic AR.</p>
     ${meta}
   </div>
   <script>
-    // Best-effort auto-open of the native deep link when scanned on device.
     setTimeout(function () {
       try { window.location.href = ${JSON.stringify(deepLink)}; } catch (e) {}
     }, 400);
