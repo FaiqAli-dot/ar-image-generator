@@ -1,0 +1,21 @@
+{
+  "fixture": "generated test cube (not Luma 41MB)",
+  "originalBytes": 1556,
+  "optimizedBytes": 1656,
+  "mobileBytes": 1576,
+  "views16Bytes": 306109,
+  "views72Bytes": 1398021,
+  "renderEngine": "three_playwright",
+  "renderRes": 512,
+  "timingsMs": {
+    "import": 24,
+    "processOptimizeAndRender16and72": 1846,
+    "publish": 35,
+    "mobileGlbDownload": 4,
+    "first16ViewDownload": 2
+  },
+  "firstViewPngBytes": 8986,
+  "mobileGlbDownloadedBytes": 1576,
+  "menuUrl": "http://127.0.0.1:37743/ar/3325f0648d544d8cada8a497976e3979",
+  "compareUrl": "http://127.0.0.1:37743/dev/compare/3325f0648d544d8cada8a497976e3979"
+}

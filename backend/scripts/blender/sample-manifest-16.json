@@ -1,0 +1,184 @@
+{
+ "source_glb": "model.glb",
+ "camera": {
+  "lens_mm": 50,
+  "distance": 3.600075233847591,
+  "center": [
+   -0.2992866635322571,
+   0.21949630975723267,
+   0.37996000051498413
+  ]
+ },
+ "bbox_min": [
+  -0.9190919995307922,
+  -0.4034489393234253,
+  -0.3793226480484009
+ ],
+ "bbox_max": [
+  0.3205186426639557,
+  0.8424415588378906,
+  1.1392426490783691
+ ],
+ "views": [
+  {
+   "path": "azimuth_000_elevation_low.png",
+   "azimuth_deg": 0,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_045_elevation_low.png",
+   "azimuth_deg": 45,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_090_elevation_low.png",
+   "azimuth_deg": 90,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_135_elevation_low.png",
+   "azimuth_deg": 135,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_180_elevation_low.png",
+   "azimuth_deg": 180,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_225_elevation_low.png",
+   "azimuth_deg": 225,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_270_elevation_low.png",
+   "azimuth_deg": 270,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_315_elevation_low.png",
+   "azimuth_deg": 315,
+   "elevation_label": "low",
+   "elevation_deg": 10,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_000_elevation_high.png",
+   "azimuth_deg": 0,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_045_elevation_high.png",
+   "azimuth_deg": 45,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_090_elevation_high.png",
+   "azimuth_deg": 90,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_135_elevation_high.png",
+   "azimuth_deg": 135,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_180_elevation_high.png",
+   "azimuth_deg": 180,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_225_elevation_high.png",
+   "azimuth_deg": 225,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_270_elevation_high.png",
+   "azimuth_deg": 270,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  },
+  {
+   "path": "azimuth_315_elevation_high.png",
+   "azimuth_deg": 315,
+   "elevation_label": "high",
+   "elevation_deg": 35,
+   "width": 1024,
+   "height": 1024,
+   "source": "synthetic_render",
+   "status": "rendered_unreviewed"
+  }
+ ]
+}

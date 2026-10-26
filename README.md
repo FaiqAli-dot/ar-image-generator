@@ -10,9 +10,9 @@ Native iPhone app that captures a dish from ~72 guided photo angles, removes bac
 |------|---------|
 | `ARFoodCapture/` | Xcode iOS app (SwiftUI + AVFoundation + Vision + ARKit/RealityKit) |
 | `ARFoodCapture/.../Resources/DemoBurger/` | Preloaded DEMO BURGER (72 transparent views) |
-| `backend/` | **Phase 2** Node/Express object API (real PNG storage + permanent AR URLs) |
+| `backend/` | Node/Express object API (photographic PNGs + **GLB import / model-viewer menu / dual 16·72 renders**) |
 | `optional-backend/` | Optional rembg background-removal helper (not the object API) |
-| `docs/` | Deploy + iOS API configuration |
+| `docs/` | Deploy, iOS API config, [GLB import](docs/glb-import-and-browser-3d.md) |
 
 ## Requirements
 
@@ -101,10 +101,19 @@ Home → Capture → Process → Library (local)
 Customer → HTTPS /ar/{id} → arfood://object/{id} → download cache → same AR viewer
 ```
 
+## GLB import (browser 3D + dual output)
+
+```bash
+cd backend && npm install && npm start
+# open http://localhost:3000/owner
+```
+
+Import a Luma `.glb` → review cleanup suggestions → process (optimized GLB + 16/72 synthetic views) → publish → customer `/ar/{id}` uses `<model-viewer>`; dev compare at `/dev/compare/{id}`. Details: [docs/glb-import-and-browser-3d.md](docs/glb-import-and-browser-3d.md).
+
 ## Limitations (honest)
 
 - This Linux/cloud agent environment **cannot** run Xcode, ARKit, or a physical iPhone. Backend tests run here; full capture/AR verification requires a Mac + device.
-- Browser WebXR was intentionally **not** built — photographic billboard switching is more reliable in the native app.
+- Browser menu 3D/AR uses Google model-viewer (Scene Viewer / Quick Look hooks). **Device AR was not tested** on a real phone in this environment; server-side USDZ is not produced on Linux.
 - MVP backend has **no auth**; protect write endpoints in production networks if needed.
 - Free-tier hosts sleep and need a **persistent disk** for uploads.
 
